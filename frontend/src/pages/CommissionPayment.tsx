@@ -24,7 +24,7 @@ const CommissionPayment: React.FC = () => {
       const token = localStorage.getItem('token');
       
       const response = await axios.post(
-        'http://localhost:5000/api/v1/payments/commission',
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/payments/commission`,
         formData,
         {
           headers: {

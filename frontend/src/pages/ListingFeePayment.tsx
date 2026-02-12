@@ -31,7 +31,7 @@ const ListingFeePayment: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `http://localhost:5000/api/v1/properties/${propertyId}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/properties/${propertyId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -63,7 +63,7 @@ const ListingFeePayment: React.FC = () => {
       const token = localStorage.getItem('token');
       
       const response = await axios.post(
-        'http://localhost:5000/api/v1/payments/listing-fee',
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/payments/listing-fee`,
         {
           propertyId,
           paymentMethod,

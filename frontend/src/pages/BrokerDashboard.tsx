@@ -39,7 +39,7 @@ const BrokerDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        'http://localhost:5000/api/v1/brokers/profile',
+       `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/brokers/profile`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -58,7 +58,7 @@ const BrokerDashboard: React.FC = () => {
       
       // Fetch notification count
       const notifResponse = await axios.get(
-        'http://localhost:5000/api/v1/broker-notifications/unread-count',
+       `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/broker-notifications/unread-count`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -66,7 +66,7 @@ const BrokerDashboard: React.FC = () => {
 
       // Fetch all notifications for total count
       const allNotifResponse = await axios.get(
-        'http://localhost:5000/api/v1/broker-notifications',
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/broker-notifications`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
