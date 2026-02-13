@@ -30,9 +30,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Enable CORS
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'https://getroof.in', 'https://www.getroof.in'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );

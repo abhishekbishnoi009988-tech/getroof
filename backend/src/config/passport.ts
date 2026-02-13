@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/User';
 
+
 console.log('🔍 Checking Google OAuth credentials...');
 console.log('Client ID exists:', !!process.env.GOOGLE_CLIENT_ID);
 console.log('Client Secret exists:', !!process.env.GOOGLE_CLIENT_SECRET);
@@ -16,7 +17,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         callbackURL:
           process.env.GOOGLE_CALLBACK_URL ||
-          'http://localhost:5000/api/v1/auth/google/callback',
+        'http://localhost:5000/api/v1/auth/google/callback',
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
