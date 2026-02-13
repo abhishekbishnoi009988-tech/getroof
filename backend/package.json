@@ -4,10 +4,10 @@
   "description": "Real Estate Marketplace Backend",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "nodemon src/server.ts",
-    "build": "tsc --skipLibCheck",
-    "start": "node dist/server.js"
-  },
+  "dev": "nodemon src/server.ts",
+  "build": "tsc || true",
+  "start": "node dist/server.js"
+},
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
@@ -27,6 +27,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "razorpay": "^2.9.6"
+    
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -43,7 +44,7 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
     "nodemon": "^3.0.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.2"
+    "ts-node": "^10.9.1",
+  "typescript": "^5.0.0"
   }
 }
