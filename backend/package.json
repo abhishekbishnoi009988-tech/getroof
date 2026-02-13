@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-   "build": "tsc --skipLibCheck",
+    "build": "tsc --skipLibCheck",
     "start": "node dist/server.js"
   },
   "dependencies": {
@@ -38,7 +38,7 @@
     "@types/hpp": "^0.2.7",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
-    "@types/multer": "^1.4.11",
+    "@types/multer": "^1.4.13",
     "@types/node": "^20.19.33",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
