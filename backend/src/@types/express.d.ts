@@ -1,11 +1,8 @@
-import { Request } from 'express';
-
 declare global {
   namespace Express {
     interface Request {
       user?: any;
     }
-    
     namespace Multer {
       interface File {
         fieldname: string;
@@ -22,6 +19,6 @@ declare global {
   }
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends Express.Request {
   user?: any;
 }
