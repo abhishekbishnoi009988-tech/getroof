@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 declare global {
   namespace Express {
     interface Request {
@@ -19,6 +21,6 @@ declare global {
   }
 }
 
-export interface AuthRequest extends Express.Request {
+export interface AuthRequest extends Request {
   user?: any;
 }
