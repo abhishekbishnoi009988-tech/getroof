@@ -18,6 +18,7 @@ export interface IProperty extends Document {
   bathrooms?: number;
   amenities: string[];
   images: string[];
+  ownerPhone?: string;
   status: 'active' | 'sold' | 'rented';
   createdAt: Date;
   updatedAt: Date;
@@ -80,6 +81,10 @@ const propertySchema = new Schema<IProperty>(
     bathrooms: Number,
     amenities: [String],
     images: [String],
+    ownerPhone: {
+      type: String,
+      match: [/^[6-9]\d{9}$/, 'Please add a valid 10-digit mobile number'],
+    },
     status: {
       type: String,
       enum: ['active', 'sold', 'rented'],

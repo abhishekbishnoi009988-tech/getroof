@@ -46,16 +46,10 @@ const PropertyList: React.FC = () => {
     setLoading(true);
     try {
       const params: any = {};
-
-      if (type === 'buy') {
-        params.listingType = 'sale';
-      } else if (type === 'rent') {
-        params.listingType = 'rent';
-      }
-
+      if (type === 'buy') params.listingType = 'sale';
+      else if (type === 'rent') params.listingType = 'rent';
       if (minPrice) params.minPrice = minPrice;
       if (maxPrice) params.maxPrice = maxPrice;
-
       const response = await API.get('/properties', { params });
       setProperties(response.data.data || []);
     } catch (error) {
@@ -71,25 +65,15 @@ const PropertyList: React.FC = () => {
       toast.error('Please enter a valid 6-digit PIN code');
       return;
     }
-
     setLoading(true);
     try {
-      const params: any = {
-        pinCode: pinCodeSearch,
-      };
-
-      if (type === 'buy') {
-        params.listingType = 'sale';
-      } else if (type === 'rent') {
-        params.listingType = 'rent';
-      }
-
+      const params: any = { pinCode: pinCodeSearch };
+      if (type === 'buy') params.listingType = 'sale';
+      else if (type === 'rent') params.listingType = 'rent';
       if (minPrice) params.minPrice = minPrice;
       if (maxPrice) params.maxPrice = maxPrice;
-
       const response = await API.get('/properties', { params });
       setProperties(response.data.data || []);
-
       if (response.data.count === 0) {
         toast.error(`No properties found in PIN code ${pinCodeSearch}`);
       } else {
@@ -119,96 +103,94 @@ const PropertyList: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-6">
         {/* Search Bar */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            {type === 'buy' ? 'Properties for Sale' : 'Properties for Rent'}
+        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+            {type === 'buy' ? '🏠 Properties for Sale' : '🏘️ Properties for Rent'}
           </h1>
+          <p className="text-gray-500 text-sm mb-4">Find your perfect property by PIN code</p>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search by PIN Code (6 digits)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength={6}
-                  pattern="\d{6}"
-                  value={pinCodeSearch}
-                  onChange={(e) => setPinCodeSearch(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter PIN code (e.g., 302020)"
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  onKeyPress={(e) => e.key === 'Enter' && handlePinCodeSearch()}
-                />
-                {pinCodeSearch && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="px-4 py-3 bg-gray-200 rounded-lg hover:bg-gray-300"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                )}
+          {/* Search Input - Full width on mobile */}
+          <div className="flex flex-col gap-3">
+            <input
+              type="text"
+              maxLength={6}
+              pattern="\d{6}"
+              value={pinCodeSearch}
+              onChange={(e) => setPinCodeSearch(e.target.value.replace(/\D/g, ''))}
+              placeholder="Enter 6-digit PIN code (e.g., 302020)"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base outline-none"
+              onKeyPress={(e) => e.key === 'Enter' && handlePinCodeSearch()}
+            />
+
+            {/* Buttons Row */}
+            <div className="flex gap-2">
+              <button
+                onClick={handlePinCodeSearch}
+                disabled={loading}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 font-semibold flex items-center justify-center gap-2 text-base"
+              >
+                <Search className="w-5 h-5" />
+                <span>Search</span>
+              </button>
+
+              {pinCodeSearch && (
                 <button
-                  onClick={handlePinCodeSearch}
-                  disabled={loading}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-semibold flex items-center space-x-2"
+                  onClick={handleClearSearch}
+                  className="px-4 py-3 bg-gray-100 rounded-xl hover:bg-gray-200 border border-gray-200"
                 >
-                  <Search className="w-5 h-5" />
-                  <span>Search</span>
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
-              </div>
-            </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="px-6 py-3 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 flex items-center space-x-2"
+                className={`px-4 py-3 rounded-xl border flex items-center gap-2 font-medium text-sm ${
+                  showFilters
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                }`}
               >
                 <Filter className="w-5 h-5" />
-                <span>Filters</span>
+                <span className="hidden sm:inline">Filters</span>
               </button>
             </div>
           </div>
 
           {/* Filters Panel */}
           {showFilters && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="font-semibold mb-4">Price Range</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <h3 className="font-semibold mb-3 text-gray-800">💰 Price Range</h3>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-gray-600 mb-2">Min Price</label>
+                  <label className="block text-xs text-gray-500 mb-1">Min Price</label>
                   <input
                     type="number"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     placeholder="₹0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-2">Max Price</label>
+                  <label className="block text-xs text-gray-500 mb-1">Max Price</label>
                   <input
                     type="number"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="₹10,00,00,000"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    placeholder="₹10Cr"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
-              <div className="flex gap-4 mt-4">
+              <div className="flex gap-3 mt-3">
                 <button
                   onClick={() => {
-                    if (pinCodeSearch) {
-                      handlePinCodeSearch();
-                    } else {
-                      fetchAllProperties();
-                    }
+                    if (pinCodeSearch) handlePinCodeSearch();
+                    else fetchAllProperties();
                   }}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium text-sm"
                 >
                   Apply Filters
                 </button>
@@ -218,7 +200,7 @@ const PropertyList: React.FC = () => {
                     setMaxPrice('');
                     setShowFilters(false);
                   }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 font-medium text-sm"
                 >
                   Clear
                 </button>
@@ -228,9 +210,9 @@ const PropertyList: React.FC = () => {
         </div>
 
         {/* Results Count */}
-        <div className="mb-4">
-          <p className="text-gray-600">
-            {loading ? 'Searching...' : `${properties.length} properties found`}
+        <div className="mb-4 px-1">
+          <p className="text-gray-500 text-sm">
+            {loading ? '🔍 Searching...' : `✅ ${properties.length} properties found`}
             {pinCodeSearch && ` in PIN code ${pinCodeSearch}`}
           </p>
         </div>
@@ -241,10 +223,10 @@ const PropertyList: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : properties.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
             <div className="text-6xl mb-4">🏠</div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">No Properties Found</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-500 mb-6">
               {pinCodeSearch
                 ? `No properties available in PIN code ${pinCodeSearch}`
                 : 'Try adjusting your filters or search by PIN code'}
@@ -252,22 +234,22 @@ const PropertyList: React.FC = () => {
             {pinCodeSearch && (
               <button
                 onClick={handleClearSearch}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+                className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 font-medium"
               >
                 View All Properties
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {properties.map((property) => (
               <div
                 key={property._id}
                 onClick={() => navigate(`/property/${property._id}`)}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+                className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100"
               >
                 {/* Property Image */}
-                <div className="relative h-48 bg-gray-200">
+                <div className="relative h-52 bg-gray-100">
                   {property.images && property.images.length > 0 ? (
                     <img
                       src={property.images[0]}
@@ -279,36 +261,45 @@ const PropertyList: React.FC = () => {
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      No Image
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
+                      🏠
                     </div>
                   )}
                   {/* PIN Code Badge */}
-                  <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
                     📍 {property.address.pinCode}
+                  </div>
+                  {/* Listing Type Badge */}
+                  <div className="absolute top-3 left-3 bg-white text-blue-600 px-2 py-1 rounded-full text-xs font-bold shadow-md">
+                    {property.listingType === 'sale' ? '🏷️ For Sale' : '🔑 For Rent'}
                   </div>
                 </div>
 
                 {/* Property Info */}
                 <div className="p-4">
-                  <h3 className="font-bold text-lg mb-2 line-clamp-1">{property.title}</h3>
+                  <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">
+                    {property.title}
+                  </h3>
 
-                  <p className="text-2xl font-bold text-blue-600 mb-3">
+                  <p className="text-xl font-bold text-blue-600 mb-3">
                     {formatPrice(property.price)}
+                    {property.listingType === 'rent' && (
+                      <span className="text-sm font-normal text-gray-500">/month</span>
+                    )}
                   </p>
 
-                  <div className="space-y-2 text-sm text-gray-600 mb-3">
-                    <p className="flex items-center">
-                      <span className="font-semibold mr-2">📍</span>
-                      {property.address.city}, {property.address.state}
-                    </p>
-                    <p className="flex items-center">
-                      <span className="font-semibold mr-2">📏</span>
-                      {property.area} sq ft
-                      {property.bedrooms && property.bedrooms > 0 && (
-                        <span className="ml-2">• {property.bedrooms} BHK</span>
-                      )}
-                    </p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className="bg-gray-50 text-gray-600 text-xs px-2 py-1 rounded-lg border border-gray-100">
+                      📍 {property.address.city}, {property.address.state}
+                    </span>
+                    <span className="bg-gray-50 text-gray-600 text-xs px-2 py-1 rounded-lg border border-gray-100">
+                      📏 {property.area} sq ft
+                    </span>
+                    {property.bedrooms && property.bedrooms > 0 && (
+                      <span className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-lg border border-blue-100 font-medium">
+                        🛏️ {property.bedrooms} BHK
+                      </span>
+                    )}
                   </div>
 
                   <button
@@ -316,9 +307,9 @@ const PropertyList: React.FC = () => {
                       e.stopPropagation();
                       navigate(`/property/${property._id}`);
                     }}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold"
+                    className="w-full bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 font-semibold text-sm transition-colors"
                   >
-                    View Details
+                    View Details →
                   </button>
                 </div>
               </div>

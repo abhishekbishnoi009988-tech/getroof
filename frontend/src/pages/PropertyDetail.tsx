@@ -13,7 +13,7 @@ const PropertyDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   
-  // Contact Broker Modal State
+  // Contact Broker Modal State (only for sale)
   const [showContactModal, setShowContactModal] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerName, setBuyerName] = useState('');
@@ -39,7 +39,6 @@ const PropertyDetail: React.FC = () => {
   const handleContactBroker = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate phone number
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(buyerPhone)) {
       toast.error('Please enter a valid 10-digit mobile number starting with 6-9');
@@ -49,8 +48,6 @@ const PropertyDetail: React.FC = () => {
     setSubmitting(true);
 
     try {
-      console.log('📞 Submitting buyer interest...');
-      
       const response = await API.post('/buyer-interests', {
         propertyId: id,
         phone: buyerPhone,
@@ -58,22 +55,17 @@ const PropertyDetail: React.FC = () => {
         message: buyerMessage || 'I am interested in this property',
       });
 
-      console.log('✅ Response:', response.data);
-
       if (response.data.success) {
         toast.success(
           response.data.message || 
           'Your contact details have been sent to the broker!'
         );
-        
-        // Reset form and close modal
         setBuyerPhone('');
         setBuyerName('');
         setBuyerMessage('');
         setShowContactModal(false);
       }
     } catch (error: any) {
-      console.error('❌ Error:', error);
       toast.error(
         error.response?.data?.message || 
         'Failed to send your details. Please try again.'
@@ -101,6 +93,8 @@ const PropertyDetail: React.FC = () => {
 
   if (!property) return null;
 
+  const isRent = property.listingType === 'rent';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -118,7 +112,6 @@ const PropertyDetail: React.FC = () => {
         {/* Image Gallery */}
         {property.images && property.images.length > 0 ? (
           <div className="mb-8">
-            {/* Main Image */}
             <div className="mb-4 rounded-lg overflow-hidden">
               <img
                 src={property.images[selectedImage]}
@@ -126,8 +119,6 @@ const PropertyDetail: React.FC = () => {
                 className="w-full h-96 object-cover"
               />
             </div>
-
-            {/* Thumbnail Images */}
             {property.images.length > 1 && (
               <div className="grid grid-cols-5 gap-2">
                 {property.images.map((image: string, index: number) => (
@@ -161,18 +152,21 @@ const PropertyDetail: React.FC = () => {
           <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-4xl font-bold mb-2">{property.title}</h1>
-              
               <div className="flex items-center text-gray-600 mb-4">
                 <MapPin className="w-5 h-5 mr-2" />
                 <span>
-                  {property.address.street}, {property.address.city}, {property.address.state} - {property.address.zipCode}
+                  {property.address.street}, {property.address.city}, {property.address.state} - {property.address.pinCode}
                 </span>
               </div>
             </div>
-
-            <p className="text-3xl text-blue-600 font-bold">
-              {formatPrice(property.price)}
-            </p>
+            <div className="text-right">
+              <p className="text-3xl text-blue-600 font-bold">
+                {formatPrice(property.price)}
+              </p>
+              {isRent && (
+                <p className="text-sm text-gray-500 mt-1">per month</p>
+              )}
+            </div>
           </div>
 
           {/* Property Stats */}
@@ -218,25 +212,47 @@ const PropertyDetail: React.FC = () => {
               <div className="bg-green-50 px-4 py-2 rounded-lg">
                 <span className="text-sm text-gray-600">Listing Type: </span>
                 <span className="font-semibold text-green-600">
-                  For {property.listingType === 'sale' ? 'Sale' : 'Rent'}
+                  For {isRent ? 'Rent' : 'Sale'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Contact Broker Button */}
-          <button
-            onClick={() => setShowContactModal(true)}
-            className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 text-lg font-semibold w-full sm:w-auto flex items-center justify-center space-x-2"
-          >
-            <Phone className="w-5 h-5" />
-            <span>Contact Broker</span>
-          </button>
+          {/* Contact Section - Different for Rent vs Sale */}
+          {isRent ? (
+            // RENT: Show owner phone directly
+            <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-green-800 mb-2">📞 Contact Owner Directly</h3>
+              <p className="text-green-700 text-sm mb-4">
+                This is a direct rental listing. Call the owner to schedule a visit.
+              </p>
+              {property.ownerPhone ? (
+                <a
+                  href={`tel:${property.ownerPhone}`}
+                  className="inline-flex items-center space-x-3 bg-green-600 text-white px-8 py-4 rounded-xl hover:bg-green-700 text-lg font-semibold transition-colors"
+                >
+                  <Phone className="w-6 h-6" />
+                  <span>Call Owner: {property.ownerPhone}</span>
+                </a>
+              ) : (
+                <p className="text-gray-500 italic">Owner phone not available</p>
+              )}
+            </div>
+          ) : (
+            // SALE: Show Contact Broker button
+            <button
+              onClick={() => setShowContactModal(true)}
+              className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 text-lg font-semibold w-full sm:w-auto flex items-center justify-center space-x-2"
+            >
+              <Phone className="w-5 h-5" />
+              <span>Contact Broker</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Contact Broker Modal */}
-      {showContactModal && (
+      {/* Contact Broker Modal - only for sale listings */}
+      {showContactModal && !isRent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h2 className="text-2xl font-bold mb-4">Contact Broker</h2>
@@ -246,9 +262,7 @@ const PropertyDetail: React.FC = () => {
 
             <form onSubmit={handleContactBroker} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
                 <input
                   type="text"
                   value={buyerName}
@@ -272,9 +286,7 @@ const PropertyDetail: React.FC = () => {
                   maxLength={10}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter 10-digit mobile number
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number</p>
               </div>
 
               <div>
