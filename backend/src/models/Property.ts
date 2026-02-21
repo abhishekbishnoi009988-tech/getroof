@@ -18,6 +18,7 @@ export interface IProperty extends Document {
   bathrooms?: number;
   amenities: string[];
   images: string[];
+  video?: string;
   ownerPhone?: string;
   status: 'active' | 'sold' | 'rented';
   createdAt: Date;
@@ -81,6 +82,9 @@ const propertySchema = new Schema<IProperty>(
     bathrooms: Number,
     amenities: [String],
     images: [String],
+    video: {
+      type: String,
+    },
     ownerPhone: {
       type: String,
       match: [/^[6-9]\d{9}$/, 'Please add a valid 10-digit mobile number'],
@@ -96,7 +100,6 @@ const propertySchema = new Schema<IProperty>(
   }
 );
 
-// Index for fast PIN code searches
 propertySchema.index({ 'address.pinCode': 1 });
 propertySchema.index({ listingType: 1 });
 propertySchema.index({ status: 1 });

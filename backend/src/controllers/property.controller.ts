@@ -1,6 +1,27 @@
 import { Response } from 'express';
 import Property from '../models/Property';
 import Broker from '../models/Broker';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper: Upload base64 to Cloudinary
+const uploadToCloudinary = async (base64Data: string, resourceType: 'image' | 'video') => {
+  const result = await cloudinary.uploader.upload(base64Data, {
+    resource_type: resourceType,
+    folder: 'getroof',
+    ...(resourceType === 'video' && {
+      eager: [{ format: 'mp4' }],
+      eager_async: false,
+    }),
+  });
+  return result.secure_url;
+};
 
 // @desc    Upload house by owner (No payment required)
 // @route   POST /api/v1/properties/upload-house
@@ -9,7 +30,6 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
   try {
     console.log('🏠 Upload house request received');
     console.log('User:', req.user?.email);
-    console.log('Body:', req.body);
 
     if (!req.user) {
       return res.status(401).json({
@@ -30,6 +50,8 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       bathrooms,
       amenities,
       images,
+      video,
+      ownerPhone,
     } = req.body;
 
     // Validate required fields
@@ -46,6 +68,24 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
         success: false,
         message: 'Please provide a valid 6-digit PIN code',
       });
+    }
+
+    // Upload images to Cloudinary
+    let imageUrls: string[] = [];
+    if (images && images.length > 0) {
+      console.log(`📸 Uploading ${images.length} images to Cloudinary...`);
+      imageUrls = await Promise.all(
+        images.map((img: string) => uploadToCloudinary(img, 'image'))
+      );
+      console.log('✅ Images uploaded');
+    }
+
+    // Upload video to Cloudinary
+    let videoUrl: string | undefined;
+    if (video) {
+      console.log('🎬 Uploading video to Cloudinary...');
+      videoUrl = await uploadToCloudinary(video, 'video');
+      console.log('✅ Video uploaded:', videoUrl);
     }
 
     // Create property
@@ -66,12 +106,13 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       bedrooms: bedrooms ? Number(bedrooms) : undefined,
       bathrooms: bathrooms ? Number(bathrooms) : undefined,
       amenities: amenities || [],
-      images: images || [],
+      images: imageUrls,
+      video: videoUrl,
+      ownerPhone: ownerPhone || undefined,
       status: 'active',
     });
 
     console.log('✅ Property created:', property._id);
-    console.log('📍 PIN Code:', property.address.pinCode);
 
     res.status(201).json({
       success: true,
@@ -99,14 +140,10 @@ export const createProperty = async (req: any, res: Response) => {
       });
     }
 
-    // Add user as seller
     req.body.seller = req.user._id;
     
-    // If user is a broker, mark property as broker-listed
     if (req.user.role === 'broker') {
       req.body.listedBy = 'broker';
-      
-      // Find broker document for this user
       const broker = await Broker.findOne({ user: req.user._id });
       if (broker) {
         req.body.listedByBroker = broker._id;
@@ -138,35 +175,19 @@ export const getAllProperties = async (req: any, res: Response) => {
 
     const query: any = { status: 'active' };
 
-    // Filter by PIN code
-    if (pinCode) {
-      query['address.pinCode'] = pinCode;
-    }
+    if (pinCode) query['address.pinCode'] = pinCode;
+    if (listingType) query.listingType = listingType;
+    if (propertyType) query.propertyType = propertyType;
 
-    // Filter by listing type
-    if (listingType) {
-      query.listingType = listingType;
-    }
-
-    // Filter by property type
-    if (propertyType) {
-      query.propertyType = propertyType;
-    }
-
-    // Filter by price range
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = Number(minPrice);
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
-    console.log('🔍 Property search query:', query);
-
     const properties = await Property.find(query)
       .populate('seller', 'name email phone')
       .sort('-createdAt');
-
-    console.log(`✅ Found ${properties.length} properties`);
 
     res.status(200).json({
       success: true,
@@ -174,11 +195,9 @@ export const getAllProperties = async (req: any, res: Response) => {
       data: properties,
     });
   } catch (error: any) {
-    console.error('❌ Get properties error:', error);
     res.status(500).json({
       success: false,
       message: error.message,
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };
@@ -202,9 +221,7 @@ export const searchByPinCodes = async (req: any, res: Response) => {
       'address.pinCode': { $in: pinCodes },
     };
 
-    if (listingType) {
-      query.listingType = listingType;
-    }
+    if (listingType) query.listingType = listingType;
 
     const properties = await Property.find(query)
       .populate('seller', 'name email phone')
@@ -254,7 +271,7 @@ export const getProperty = async (req: any, res: Response) => {
 
 // @desc    Update property
 // @route   PUT /api/v1/properties/:id
-// @access  Private (Broker/Admin)
+// @access  Private
 export const updateProperty = async (req: any, res: Response) => {
   try {
     if (!req.user) {
@@ -273,7 +290,6 @@ export const updateProperty = async (req: any, res: Response) => {
       });
     }
 
-    // Make sure user is property owner or admin
     const sellerId = property.seller.toString();
     const userId = req.user._id.toString();
     
@@ -303,7 +319,7 @@ export const updateProperty = async (req: any, res: Response) => {
 
 // @desc    Delete property
 // @route   DELETE /api/v1/properties/:id
-// @access  Private (Broker/Admin)
+// @access  Private
 export const deleteProperty = async (req: any, res: Response) => {
   try {
     if (!req.user) {
@@ -322,7 +338,6 @@ export const deleteProperty = async (req: any, res: Response) => {
       });
     }
 
-    // Make sure user is property owner or admin
     const sellerId = property.seller.toString();
     const userId = req.user._id.toString();
     
@@ -347,9 +362,36 @@ export const deleteProperty = async (req: any, res: Response) => {
   }
 };
 
+// @desc    Get user's properties
+// @route   GET /api/v1/properties/my-properties
+// @access  Private
+export const getMyProperties = async (req: any, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized',
+      });
+    }
+
+    const properties = await Property.find({ seller: req.user._id }).sort('-createdAt');
+
+    res.status(200).json({
+      success: true,
+      count: properties.length,
+      data: properties,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // @desc    Upload property images
 // @route   POST /api/v1/properties/:id/images
-// @access  Private (Broker/Admin)
+// @access  Private
 export const uploadPropertyImages = async (req: any, res: Response) => {
   try {
     if (!req.user) {
@@ -368,7 +410,6 @@ export const uploadPropertyImages = async (req: any, res: Response) => {
       });
     }
 
-    // Make sure user is property owner or admin
     const sellerId = property.seller.toString();
     const userId = req.user._id.toString();
     
@@ -379,7 +420,6 @@ export const uploadPropertyImages = async (req: any, res: Response) => {
       });
     }
 
-    // Handle file upload logic here
     res.status(200).json({
       success: true,
       message: 'Images uploaded successfully',
@@ -393,30 +433,13 @@ export const uploadPropertyImages = async (req: any, res: Response) => {
 };
 
 
-// @desc    Get user's properties
-// @route   GET /api/v1/properties/my-properties
-// @access  Private
-export const getMyProperties = async (req: any, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
-    }
 
-    const properties = await Property.find({ seller: req.user._id })
-      .sort('-createdAt');
 
-    res.status(200).json({
-      success: true,
-      count: properties.length,
-      data: properties,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+
+
+
+
+
+
+
+

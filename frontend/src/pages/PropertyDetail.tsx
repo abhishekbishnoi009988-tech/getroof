@@ -12,17 +12,13 @@ const PropertyDetail: React.FC = () => {
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  
-  // Contact Broker Modal State (only for sale)
   const [showContactModal, setShowContactModal] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerName, setBuyerName] = useState('');
   const [buyerMessage, setBuyerMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchProperty();
-  }, [id]);
+  useEffect(() => { fetchProperty(); }, [id]);
 
   const fetchProperty = async () => {
     try {
@@ -38,58 +34,37 @@ const PropertyDetail: React.FC = () => {
 
   const handleContactBroker = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(buyerPhone)) {
+    if (!/^[6-9]\d{9}$/.test(buyerPhone)) {
       toast.error('Please enter a valid 10-digit mobile number starting with 6-9');
       return;
     }
-
     setSubmitting(true);
-
     try {
       const response = await API.post('/buyer-interests', {
-        propertyId: id,
-        phone: buyerPhone,
+        propertyId: id, phone: buyerPhone,
         buyerName: buyerName || 'Anonymous Buyer',
         message: buyerMessage || 'I am interested in this property',
       });
-
       if (response.data.success) {
-        toast.success(
-          response.data.message || 
-          'Your contact details have been sent to the broker!'
-        );
-        setBuyerPhone('');
-        setBuyerName('');
-        setBuyerMessage('');
+        toast.success(response.data.message || 'Your contact details have been sent to the broker!');
+        setBuyerPhone(''); setBuyerName(''); setBuyerMessage('');
         setShowContactModal(false);
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || 
-        'Failed to send your details. Please try again.'
-      );
+      toast.error(error.response?.data?.message || 'Failed to send your details. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   if (!property) return null;
 
@@ -98,44 +73,23 @@ const PropertyDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back
+        <button onClick={() => navigate(-1)} className="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+          <ArrowLeft className="w-5 h-5 mr-2" /> Back
         </button>
 
         {/* Image Gallery */}
         {property.images && property.images.length > 0 ? (
           <div className="mb-8">
             <div className="mb-4 rounded-lg overflow-hidden">
-              <img
-                src={property.images[selectedImage]}
-                alt={property.title}
-                className="w-full h-96 object-cover"
-              />
+              <img src={property.images[selectedImage]} alt={property.title} className="w-full h-96 object-cover" />
             </div>
             {property.images.length > 1 && (
               <div className="grid grid-cols-5 gap-2">
                 {property.images.map((image: string, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`rounded-lg overflow-hidden ${
-                      selectedImage === index
-                        ? 'ring-4 ring-blue-500'
-                        : 'ring-2 ring-gray-200'
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${property.title} ${index + 1}`}
-                      className="w-full h-20 object-cover"
-                    />
+                  <button key={index} onClick={() => setSelectedImage(index)}
+                    className={`rounded-lg overflow-hidden ${selectedImage === index ? 'ring-4 ring-blue-500' : 'ring-2 ring-gray-200'}`}>
+                    <img src={image} alt={`${property.title} ${index + 1}`} className="w-full h-20 object-cover" />
                   </button>
                 ))}
               </div>
@@ -147,6 +101,23 @@ const PropertyDetail: React.FC = () => {
           </div>
         )}
 
+        {/* Video Section */}
+        {property.video && (
+          <div className="mb-8 bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              🎬 Property Video Tour
+            </h3>
+            <video
+              src={property.video}
+              controls
+              className="w-full rounded-lg max-h-96 bg-black"
+              poster={property.images?.[0]}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        )}
+
         {/* Property Details */}
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="flex justify-between items-start mb-6">
@@ -154,43 +125,28 @@ const PropertyDetail: React.FC = () => {
               <h1 className="text-4xl font-bold mb-2">{property.title}</h1>
               <div className="flex items-center text-gray-600 mb-4">
                 <MapPin className="w-5 h-5 mr-2" />
-                <span>
-                  {property.address.street}, {property.address.city}, {property.address.state} - {property.address.pinCode}
-                </span>
+                <span>{property.address.street}, {property.address.city}, {property.address.state} - {property.address.pinCode}</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-3xl text-blue-600 font-bold">
-                {formatPrice(property.price)}
-              </p>
-              {isRent && (
-                <p className="text-sm text-gray-500 mt-1">per month</p>
-              )}
+              <p className="text-3xl text-blue-600 font-bold">{formatPrice(property.price)}</p>
+              {isRent && <p className="text-sm text-gray-500 mt-1">per month</p>}
             </div>
           </div>
 
-          {/* Property Stats */}
+          {/* Stats */}
           <div className="grid grid-cols-3 gap-6 mb-8 pb-8 border-b">
             <div className="flex items-center space-x-3">
               <Maximize className="w-6 h-6 text-gray-600" />
-              <div>
-                <p className="text-gray-600 text-sm">Area</p>
-                <p className="font-semibold text-lg">{property.area} sq ft</p>
-              </div>
+              <div><p className="text-gray-600 text-sm">Area</p><p className="font-semibold text-lg">{property.area} sq ft</p></div>
             </div>
             <div className="flex items-center space-x-3">
               <Bed className="w-6 h-6 text-gray-600" />
-              <div>
-                <p className="text-gray-600 text-sm">Bedrooms</p>
-                <p className="font-semibold text-lg">{property.bedrooms || 'N/A'}</p>
-              </div>
+              <div><p className="text-gray-600 text-sm">Bedrooms</p><p className="font-semibold text-lg">{property.bedrooms || 'N/A'}</p></div>
             </div>
             <div className="flex items-center space-x-3">
               <Bath className="w-6 h-6 text-gray-600" />
-              <div>
-                <p className="text-gray-600 text-sm">Bathrooms</p>
-                <p className="font-semibold text-lg">{property.bathrooms || 'N/A'}</p>
-              </div>
+              <div><p className="text-gray-600 text-sm">Bathrooms</p><p className="font-semibold text-lg">{property.bathrooms || 'N/A'}</p></div>
             </div>
           </div>
 
@@ -200,37 +156,26 @@ const PropertyDetail: React.FC = () => {
             <p className="text-gray-700 leading-relaxed">{property.description}</p>
           </div>
 
-          {/* Property Type & Listing Type */}
-          <div className="mb-8">
-            <div className="flex space-x-4">
-              <div className="bg-blue-50 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Property Type: </span>
-                <span className="font-semibold text-blue-600">
-                  {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
-                </span>
-              </div>
-              <div className="bg-green-50 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Listing Type: </span>
-                <span className="font-semibold text-green-600">
-                  For {isRent ? 'Rent' : 'Sale'}
-                </span>
-              </div>
+          {/* Badges */}
+          <div className="mb-8 flex space-x-4">
+            <div className="bg-blue-50 px-4 py-2 rounded-lg">
+              <span className="text-sm text-gray-600">Property Type: </span>
+              <span className="font-semibold text-blue-600">{property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}</span>
+            </div>
+            <div className="bg-green-50 px-4 py-2 rounded-lg">
+              <span className="text-sm text-gray-600">Listing Type: </span>
+              <span className="font-semibold text-green-600">For {isRent ? 'Rent' : 'Sale'}</span>
             </div>
           </div>
 
-          {/* Contact Section - Different for Rent vs Sale */}
+          {/* Contact Section */}
           {isRent ? (
-            // RENT: Show owner phone directly
             <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
               <h3 className="text-xl font-bold text-green-800 mb-2">📞 Contact Owner Directly</h3>
-              <p className="text-green-700 text-sm mb-4">
-                This is a direct rental listing. Call the owner to schedule a visit.
-              </p>
+              <p className="text-green-700 text-sm mb-4">This is a direct rental listing. Call the owner to schedule a visit.</p>
               {property.ownerPhone ? (
-                <a
-                  href={`tel:${property.ownerPhone}`}
-                  className="inline-flex items-center space-x-3 bg-green-600 text-white px-8 py-4 rounded-xl hover:bg-green-700 text-lg font-semibold transition-colors"
-                >
+                <a href={`tel:${property.ownerPhone}`}
+                  className="inline-flex items-center space-x-3 bg-green-600 text-white px-8 py-4 rounded-xl hover:bg-green-700 text-lg font-semibold transition-colors">
                   <Phone className="w-6 h-6" />
                   <span>Call Owner: {property.ownerPhone}</span>
                 </a>
@@ -239,11 +184,8 @@ const PropertyDetail: React.FC = () => {
               )}
             </div>
           ) : (
-            // SALE: Show Contact Broker button
-            <button
-              onClick={() => setShowContactModal(true)}
-              className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 text-lg font-semibold w-full sm:w-auto flex items-center justify-center space-x-2"
-            >
+            <button onClick={() => setShowContactModal(true)}
+              className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 text-lg font-semibold w-full sm:w-auto flex items-center justify-center space-x-2">
               <Phone className="w-5 h-5" />
               <span>Contact Broker</span>
             </button>
@@ -251,79 +193,29 @@ const PropertyDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Contact Broker Modal - only for sale listings */}
+      {/* Contact Modal */}
       {showContactModal && !isRent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h2 className="text-2xl font-bold mb-4">Contact Broker</h2>
-            <p className="text-gray-600 mb-6">
-              Enter your details and our broker will contact you shortly.
-            </p>
-
+            <p className="text-gray-600 mb-6">Enter your details and our broker will contact you shortly.</p>
             <form onSubmit={handleContactBroker} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
-                <input
-                  type="text"
-                  value={buyerName}
-                  onChange={(e) => setBuyerName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <input type="text" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} placeholder="John Doe" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Mobile Number *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  placeholder="9876543210"
-                  pattern="[6-9][0-9]{9}"
-                  maxLength={10}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Your Mobile Number *</label>
+                <input type="tel" required value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)} placeholder="9876543210" pattern="[6-9][0-9]{9}" maxLength={10} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message (Optional)
-                </label>
-                <textarea
-                  value={buyerMessage}
-                  onChange={(e) => setBuyerMessage(e.target.value)}
-                  placeholder="I am interested in this property..."
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
+                <textarea value={buyerMessage} onChange={(e) => setBuyerMessage(e.target.value)} placeholder="I am interested in this property..." rows={3} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
               </div>
-
               <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowContactModal(false)}
-                  disabled={submitting}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {submitting ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Sending...
-                    </div>
-                  ) : (
-                    'Submit'
-                  )}
+                <button type="button" onClick={() => setShowContactModal(false)} disabled={submitting} className="flex-1 bg-gray-200 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-300 disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={submitting} className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+                  {submitting ? <div className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>Sending...</div> : 'Submit'}
                 </button>
               </div>
             </form>
