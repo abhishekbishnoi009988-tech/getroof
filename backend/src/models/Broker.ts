@@ -11,14 +11,14 @@ export interface IBroker extends Document {
     address: string;
     city: string;
     state: string;
-    pinCode?: string; // ✅ MADE OPTIONAL
-    coordinates: {
-      lat: number;
-      lng: number;
+    pinCode?: string;
+    coordinates?: {
+      lat?: number;
+      lng?: number;
     };
   };
   serviceRadius: number;
-  servicePinCodes?: string[]; // ✅ MADE OPTIONAL
+  servicePinCodes?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,20 +73,20 @@ const brokerSchema = new Schema<IBroker>(
       },
       state: {
         type: String,
-        required: [true, 'Please add state'],
+        required: false,
       },
       pinCode: {
         type: String,
-        required: false, // ✅ NOT REQUIRED - Won't block approval
+        required: false,
       },
       coordinates: {
         lat: {
           type: Number,
-          required: [true, 'Please add latitude'],
+          required: false,
         },
         lng: {
           type: Number,
-          required: [true, 'Please add longitude'],
+          required: false,
         },
       },
     },
@@ -98,10 +98,9 @@ const brokerSchema = new Schema<IBroker>(
     },
     servicePinCodes: {
       type: [String],
-      required: false, // ✅ NOT REQUIRED - Won't block approval
+      required: false,
       validate: {
         validator: function(v: string[]) {
-          // Only validate if array exists and has items
           if (!v || v.length === 0) return true;
           return v.length >= 1 && v.length <= 10;
         },
@@ -114,9 +113,21 @@ const brokerSchema = new Schema<IBroker>(
   }
 );
 
-// Indexes
-brokerSchema.index({ 'officeLocation.coordinates': '2dsphere' });
 brokerSchema.index({ verificationStatus: 1 });
 brokerSchema.index({ user: 1 });
 
 export default mongoose.model<IBroker>('Broker', brokerSchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
