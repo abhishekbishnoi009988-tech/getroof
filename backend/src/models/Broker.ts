@@ -117,17 +117,3 @@ brokerSchema.index({ verificationStatus: 1 });
 brokerSchema.index({ user: 1 });
 
 export default mongoose.model<IBroker>('Broker', brokerSchema);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
