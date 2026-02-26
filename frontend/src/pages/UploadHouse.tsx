@@ -52,7 +52,7 @@ const UploadHouse: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('video/')) { toast.error('Please select a valid video file'); return; }
-    if (file.size > 100 * 1024 * 1024) { toast.error('Video too large (max 100MB)'); return; }
+    if (file.size > 150 * 1024 * 1024) { toast.error('Video too large (max 150MB)'); return; }
     const videoEl = document.createElement('video');
     videoEl.preload = 'metadata';
     videoEl.onloadedmetadata = () => {
@@ -200,12 +200,12 @@ const UploadHouse: React.FC = () => {
             {/* Video */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-1">🎬 Property Video <span className="text-gray-400 text-base font-normal">(Optional)</span></h2>
-              <p className="text-sm text-gray-500 mb-4">Upload a video tour — max 4 minutes, max 100MB</p>
+              <p className="text-sm text-gray-500 mb-4">Upload a video tour — max 4 minutes, max 150MB</p>
               {!videoFile ? (
                 <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-purple-50 hover:bg-purple-100 transition-colors">
                   <Video className="w-10 h-10 text-purple-400 mb-2" />
                   <p className="text-sm text-purple-600 font-semibold">Click to upload video</p>
-                  <p className="text-xs text-gray-500 mt-1">MP4, MOV (Max 4 min · 100MB)</p>
+                  <p className="text-xs text-gray-500 mt-1">MP4, MOV (Max 4 min · 150MB)</p>
                   <input type="file" className="hidden" accept="video/*" onChange={handleVideoSelect} />
                 </label>
               ) : (

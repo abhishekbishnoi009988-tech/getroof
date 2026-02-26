@@ -35,38 +35,38 @@ const Dashboard: React.FC = () => {
         {user?.role === 'broker' && (
           <div className="mb-8">
             <BrokerEarnings />
-         </div>
-       )}
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Buy Card */}
-<div 
-  onClick={() => navigate('/properties?type=buy')}
-  className="bg-white rounded-lg shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow"
->
-  <div className="text-5xl mb-4">🏠</div>
-  <h2 className="text-2xl font-bold mb-2">Buy</h2>
-  <p className="text-gray-600">Search properties by PIN code</p>
-</div>
+          <div 
+            onClick={() => navigate('/properties?type=buy')}
+            className="bg-white rounded-lg shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow"
+          >
+            <div className="text-5xl mb-4">🏠</div>
+            <h2 className="text-2xl font-bold mb-2">Buy</h2>
+            <p className="text-gray-600">Search properties by PIN code</p>
+          </div>
 
-{/* Rent Card */}
-<div 
-  onClick={() => navigate('/properties?type=rent')}
-  className="bg-white rounded-lg shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow"
->
-  <div className="text-5xl mb-4">🔑</div>
-  <h2 className="text-2xl font-bold mb-2">Rent</h2>
-  <p className="text-gray-600">Search rentals by PIN code</p>
-</div>
+          {/* Rent Card */}
+          <div 
+            onClick={() => navigate('/properties?type=rent')}
+            className="bg-white rounded-lg shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow"
+          >
+            <div className="text-5xl mb-4">🔑</div>
+            <h2 className="text-2xl font-bold mb-2">Rent</h2>
+            <p className="text-gray-600">Search rentals by PIN code</p>
+          </div>
 
-          {/* Sell Card */}
+          {/* Sell / Rent Out Card */}
           <div 
             onClick={() => navigate('/upload-house')}
             className="bg-white rounded-lg shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow"
           >
-            <div className="text-5xl mb-4">💰</div>
-            <h2 className="text-2xl font-bold mb-2">Sell</h2>
-            <p className="text-gray-600">Upload your property</p>
+            <div className="text-5xl mb-4">🏷️</div>
+            <h2 className="text-2xl font-bold mb-2">Sell / Rent Out</h2>
+            <p className="text-gray-600">List your property for sale or rent</p>
           </div>
         </div>
 
