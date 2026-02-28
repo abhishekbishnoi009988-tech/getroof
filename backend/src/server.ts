@@ -20,12 +20,13 @@ import propertyRoutes from './routes/property.routes';
 import paymentRoutes from './routes/payment.routes';
 import buyerInterestRoutes from './routes/buyerInterest.routes';
 import brokerNotificationRoutes from './routes/brokerNotification.routes';
+import withdrawalRoutes from './routes/Withdrawal.routes';
 
 const app = express();
 
 // Body parser
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Enable CORS
 app.use(
@@ -50,7 +51,7 @@ app.use(mongoSanitize());
 
 // Rate limiting (ONLY in production)
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
+  windowMs: 10 * 60 * 1000,
   max: 100,
   message: 'Too many requests from this IP, please try again later',
 });
@@ -65,7 +66,7 @@ app.use(hpp());
 // Initialize Passport
 app.use(passport.initialize());
 
-// Mount routers - BOTH v1 AND non-v1 paths
+// Mount routers
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/brokers', brokerRoutes);
@@ -73,8 +74,9 @@ app.use('/api/v1/properties', propertyRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/buyer-interests', buyerInterestRoutes);
 app.use('/api/v1/broker-notifications', brokerNotificationRoutes);
+app.use('/api/v1/withdrawals', withdrawalRoutes);
 
-// Support /api/* routes (without v1) for backward compatibility
+// Backward compatibility
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/brokers', brokerRoutes);
@@ -82,6 +84,7 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/buyer-interests', buyerInterestRoutes);
 app.use('/api/broker-notifications', brokerNotificationRoutes);
+app.use('/api/withdrawals', withdrawalRoutes);
 
 // Health check
 app.get('/api/v1/health', (req: Request, res: Response) => {
@@ -95,52 +98,27 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: 'GETROOF API',
-    version: '1.0.0',
-  });
+  res.status(200).json({ success: true, message: 'GETROOF API', version: '1.0.0' });
 });
 
 // Handle 404
 app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.path}`,
-  });
+  res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.path}` });
 });
 
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
-
-  if (err.name === 'CastError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid ID format',
-    });
-  }
-
+  if (err.name === 'CastError') return res.status(400).json({ success: false, message: 'Invalid ID format' });
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    return res.status(400).json({
-      success: false,
-      message: `${field} already exists`,
-    });
+    return res.status(400).json({ success: false, message: `${field} already exists` });
   }
-
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map((e: any) => e.message);
-    return res.status(400).json({
-      success: false,
-      message: messages.join(', '),
-    });
+    return res.status(400).json({ success: false, message: messages.join(', ') });
   }
-
-  res.status(err.statusCode || 500).json({
-    success: false,
-    message: err.message || 'Server Error',
-  });
+  res.status(err.statusCode || 500).json({ success: false, message: err.message || 'Server Error' });
 });
 
 const PORT = process.env.PORT || 5000;

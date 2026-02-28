@@ -18,16 +18,15 @@ import MyProperties from './pages/MyProperties';
 import RecordSale from './pages/RecordSale';
 import PaymentHistory from './pages/PaymentHistory';
 import PropertyList from './pages/PropertyList';
+import WithdrawalPage from './pages/WithdrawalPage';
 
 function App() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
     const dismissed = localStorage.getItem('pwa-banner-dismissed');
-    
     if (isInstalled || dismissed) return;
 
     const handler = (e: any) => {
@@ -44,9 +43,7 @@ function App() {
     if (!installPrompt) return;
     installPrompt.prompt();
     const result = await installPrompt.userChoice;
-    if (result.outcome === 'accepted') {
-      setShowBanner(false);
-    }
+    if (result.outcome === 'accepted') setShowBanner(false);
     setInstallPrompt(null);
   };
 
@@ -83,6 +80,7 @@ function App() {
         {/* Broker Routes */}
         <Route path="/become-broker" element={<BecomeBroker />} />
         <Route path="/broker/notifications" element={<BrokerNotifications />} />
+        <Route path="/broker/withdrawal" element={<WithdrawalPage />} />
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -106,16 +104,10 @@ function App() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleDismiss}
-              className="text-gray-400 hover:text-gray-600 p-2 rounded-full"
-            >
+            <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600 p-2 rounded-full">
               ✕
             </button>
-            <button
-              onClick={handleInstall}
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700"
-            >
+            <button onClick={handleInstall} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700">
               Install
             </button>
           </div>
