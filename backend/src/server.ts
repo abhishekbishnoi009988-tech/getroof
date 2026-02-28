@@ -20,7 +20,7 @@ import propertyRoutes from './routes/property.routes';
 import paymentRoutes from './routes/payment.routes';
 import buyerInterestRoutes from './routes/buyerInterest.routes';
 import brokerNotificationRoutes from './routes/brokerNotification.routes';
-import withdrawalRoutes from './routes/Withdrawal.routes';
+import withdrawalRoutes from './routes/withdrawal.routes';
 
 const app = express();
 
