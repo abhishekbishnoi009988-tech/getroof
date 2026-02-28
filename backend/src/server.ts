@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Enable CORS
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'https://getroof.in', 'https://www.getroof.in'],
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'https://getroof.in', 'https://www.getroof.in', 'https://69a309cde837540df3af31ba--getroof.netlify.app', 'https://getroof.netlify.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
