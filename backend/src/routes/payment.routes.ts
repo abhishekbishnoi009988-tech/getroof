@@ -1,5 +1,7 @@
 import express from 'express';
 import {
+  createPaymentQR,
+  checkQRPayment,
   createPaymentOrder,
   verifyPayment,
   getBrokerPaymentHistory,
@@ -9,6 +11,10 @@ import { protect, authorize } from '../middleware/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router = express.Router();
+
+// NEW Cashfree QR routes
+router.post('/create-qr', protect, authorize('broker', 'admin'), asyncHandler(createPaymentQR));
+router.post('/check-qr-payment', protect, authorize('broker', 'admin'), asyncHandler(checkQRPayment));
 
 // Broker routes
 router.post('/create-order', protect, authorize('broker', 'admin'), asyncHandler(createPaymentOrder));

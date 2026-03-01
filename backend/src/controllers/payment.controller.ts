@@ -1,171 +1,172 @@
 import { Response } from 'express';
-import Razorpay from 'razorpay';
+import axios from 'axios';
 import crypto from 'crypto';
 import Payment from '../models/Payment';
 import Broker from '../models/Broker';
+import Property from '../models/Property';
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+const CASHFREE_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://api.cashfree.com/pg'
+  : 'https://sandbox.cashfree.com/pg';
 
-// @desc    Create payment order with 1.25% commission split
-// @route   POST /api/v1/payments/create-order
+const cashfreeHeaders = {
+  'x-api-version': '2023-08-01',
+  'x-client-id': process.env.CASHFREE_APP_ID!,
+  'x-client-secret': process.env.CASHFREE_SECRET_KEY!,
+  'Content-Type': 'application/json',
+};
+
+// @desc    Create Cashfree QR code for commission payment
+// @route   POST /api/v1/payments/create-qr
 // @access  Private (Broker)
-export const createPaymentOrder = async (req: any, res: Response) => {
+export const createPaymentQR = async (req: any, res: Response) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: 'Not authorized' });
-    }
+    if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
 
-    const { propertyType, saleAmount } = req.body;
+    const { propertyType, saleAmount, notificationId, propertyId } = req.body;
 
-    // Validate input
     if (!propertyType || !saleAmount || saleAmount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Property type and valid sale amount are required',
-      });
+      return res.status(400).json({ success: false, message: 'Property type and valid sale amount are required' });
     }
 
-    if (!['residential', 'commercial'].includes(propertyType)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Property type must be residential or commercial',
-      });
-    }
-
-    // Find broker
-    const broker = await Broker.findOne({ user: req.user._id }).populate('user');
-
-    if (!broker) {
-      return res.status(404).json({ success: false, message: 'Broker profile not found' });
-    }
+    const broker = await Broker.findOne({ user: req.user._id });
+    if (!broker) return res.status(404).json({ success: false, message: 'Broker profile not found' });
 
     // Calculate 1.25% commission
-    const commissionRate = 1.25;
-    const totalCommission = Math.round((saleAmount * commissionRate) / 100);
-
-    // Split commission: 45% broker, 55% platform
+    const totalCommission = Math.round((saleAmount * 1.25) / 100);
     const brokerShare = Math.round(totalCommission * 0.45);
     const platformShare = Math.round(totalCommission * 0.55);
 
-    console.log('💰 Creating payment order:');
-    console.log('  Property Type:', propertyType);
-    console.log('  Sale Amount:', saleAmount);
-    console.log('  Commission Rate:', commissionRate + '%');
-    console.log('  Total Commission (1.25%):', totalCommission);
-    console.log('  Broker Share (45% of commission):', brokerShare);
-    console.log('  Platform Share (55% of commission):', platformShare);
+    // Create Cashfree order
+    const orderId = `order_${Date.now()}_${broker._id.toString().slice(-6)}`;
 
-    // Create Razorpay order for ONLY the commission amount
-    const razorpayOrder = await razorpay.orders.create({
-      amount: totalCommission * 100, // Razorpay expects amount in paise
-      currency: 'INR',
-      receipt: `receipt_${Date.now()}`,
-      notes: {
-        propertyType: propertyType,
-        saleAmount: saleAmount.toString(),
-        commissionRate: commissionRate.toString(),
-        brokerId: broker._id.toString(),
-        brokerShare: brokerShare.toString(),
-        platformShare: platformShare.toString(),
+    const orderResponse = await axios.post(
+      `${CASHFREE_BASE_URL}/orders`,
+      {
+        order_id: orderId,
+        order_amount: totalCommission,
+        order_currency: 'INR',
+        customer_details: {
+          customer_id: `broker_${broker._id}`,
+          customer_name: req.user.name || 'Broker',
+          customer_email: req.user.email || 'broker@getroof.in',
+          customer_phone: req.user.phone || '9999999999',
+        },
+        order_meta: {
+          return_url: `${process.env.FRONTEND_URL}/broker/payment-history`,
+        },
+        order_note: `Commission for property sale of ₹${saleAmount}`,
       },
-    });
+      { headers: cashfreeHeaders }
+    );
 
-    // Create payment record
+    const cfOrderId = orderResponse.data.order_id;
+
+    // Generate QR code for this order
+    const qrResponse = await axios.post(
+      `${CASHFREE_BASE_URL}/orders/${cfOrderId}/payment-links/qrcode`,
+      {},
+      { headers: cashfreeHeaders }
+    );
+
+    const qrCodeUrl = qrResponse.data.link_url || qrResponse.data.payload;
+
+    // Save payment record
     const payment = await Payment.create({
       broker: broker._id,
       propertyType,
       saleAmount,
-      commissionRate,
+      commissionRate: 1.25,
       totalCommission,
       brokerShare,
       platformShare,
-      razorpayOrderId: razorpayOrder.id,
+      cashfreeOrderId: cfOrderId,
       paymentStatus: 'pending',
+      propertyId: propertyId || null,
+      notificationId: notificationId || null,
     });
-
-    console.log('✅ Payment order created:', payment._id);
 
     res.status(201).json({
       success: true,
       data: {
-        orderId: razorpayOrder.id,
-        amount: totalCommission, // Only commission amount
-        saleAmount,
-        commissionRate,
+        qrCode: qrCodeUrl,
         totalCommission,
         brokerShare,
         platformShare,
-        currency: 'INR',
         paymentId: payment._id,
+        cfOrderId,
+        saleAmount,
       },
     });
   } catch (error: any) {
-    console.error('❌ Create payment order error:', error);
+    console.error('❌ Create QR error:', error.response?.data || error.message);
+    res.status(500).json({ success: false, message: error.response?.data?.message || error.message });
+  }
+};
+
+// @desc    Check if QR payment is completed
+// @route   POST /api/v1/payments/check-qr-payment
+// @access  Private (Broker)
+export const checkQRPayment = async (req: any, res: Response) => {
+  try {
+    const { paymentId, cfOrderId } = req.body;
+
+    // Check order status with Cashfree
+    const orderResponse = await axios.get(
+      `${CASHFREE_BASE_URL}/orders/${cfOrderId}`,
+      { headers: cashfreeHeaders }
+    );
+
+    const orderStatus = orderResponse.data.order_status;
+    const paid = orderStatus === 'PAID';
+
+    if (paid) {
+      // Update payment record
+      const payment = await Payment.findById(paymentId);
+      if (payment) {
+        payment.paymentStatus = 'completed';
+        payment.cashfreePaymentId = orderResponse.data.cf_order_id;
+        await payment.save();
+
+        // Mark property as sold if propertyId exists
+        if (payment.propertyId) {
+          await Property.findByIdAndUpdate(payment.propertyId, { status: 'sold' });
+        }
+
+        // Update broker total earnings
+        await Broker.findByIdAndUpdate(payment.broker, {
+          $inc: { totalEarnings: payment.brokerShare },
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { paid, orderStatus },
+    });
+  } catch (error: any) {
+    console.error('❌ Check payment error:', error.response?.data || error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Verify payment and mark as completed
+// @desc    Create payment order (legacy Razorpay - keeping for backward compat)
+// @route   POST /api/v1/payments/create-order
+// @access  Private (Broker)
+export const createPaymentOrder = async (req: any, res: Response) => {
+  return res.status(400).json({ 
+    success: false, 
+    message: 'Please use /create-qr endpoint for new payments' 
+  });
+};
+
+// @desc    Verify payment (legacy)
 // @route   POST /api/v1/payments/verify
-// @access  Public
 export const verifyPayment = async (req: any, res: Response) => {
-  try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId, payerDetails } = req.body;
-
-    // Verify signature
-    const generatedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
-
-    if (generatedSignature !== razorpay_signature) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment verification failed - Invalid signature',
-      });
-    }
-
-    // Update payment record
-    const payment = await Payment.findById(paymentId);
-
-    if (!payment) {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
-    }
-
-    payment.paymentStatus = 'completed';
-    payment.razorpayPaymentId = razorpay_payment_id;
-    payment.razorpaySignature = razorpay_signature;
-    payment.payerName = payerDetails?.name;
-    payment.payerPhone = payerDetails?.phone;
-    payment.paymentDetails = {
-      method: payerDetails?.method,
-      completedAt: new Date(),
-    };
-
-    await payment.save();
-
-    console.log('✅ Payment verified and completed:', payment._id);
-    console.log('💸 Broker will receive:', payment.brokerShare);
-    console.log('💸 Platform receives:', payment.platformShare);
-
-    res.status(200).json({
-      success: true,
-      message: 'Payment successful! Commission has been recorded.',
-      data: {
-        paymentId: payment._id,
-        totalCommission: payment.totalCommission,
-        brokerShare: payment.brokerShare,
-        platformShare: payment.platformShare,
-      },
-    });
-  } catch (error: any) {
-    console.error('❌ Verify payment error:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
+  return res.status(400).json({ 
+    success: false, 
+    message: 'Please use /check-qr-payment endpoint' 
+  });
 };
 
 // @desc    Get broker's payment history
@@ -173,15 +174,10 @@ export const verifyPayment = async (req: any, res: Response) => {
 // @access  Private (Broker)
 export const getBrokerPaymentHistory = async (req: any, res: Response) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: 'Not authorized' });
-    }
+    if (!req.user) return res.status(401).json({ success: false, message: 'Not authorized' });
 
     const broker = await Broker.findOne({ user: req.user._id });
-
-    if (!broker) {
-      return res.status(404).json({ success: false, message: 'Broker profile not found' });
-    }
+    if (!broker) return res.status(404).json({ success: false, message: 'Broker profile not found' });
 
     const payments = await Payment.find({ broker: broker._id }).sort('-createdAt');
 
@@ -207,9 +203,7 @@ export const getBrokerPaymentHistory = async (req: any, res: Response) => {
 // @access  Private (Admin)
 export const getAllPayments = async (req: any, res: Response) => {
   try {
-    const payments = await Payment.find()
-      .populate('broker')
-      .sort('-createdAt');
+    const payments = await Payment.find().populate('broker').sort('-createdAt');
 
     const totalRevenue = payments
       .filter((p) => p.paymentStatus === 'completed')
