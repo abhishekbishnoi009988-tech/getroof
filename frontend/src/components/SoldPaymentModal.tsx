@@ -31,9 +31,10 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
   } | null>(null);
   const [checkingPayment, setCheckingPayment] = useState(false);
 
-  const commission = saleAmount ? Math.round((parseFloat(saleAmount) * 1.25) / 100) : 0;
-  const brokerShare = Math.round(commission * 0.45);
-  const platformShare = Math.round(commission * 0.55);
+  // Updated: 1.49% commission, 70% broker / 30% platform
+  const commission = saleAmount ? Math.round((parseFloat(saleAmount) * 1.49) / 100) : 0;
+  const brokerShare = Math.round(commission * 0.70);
+  const platformShare = Math.round(commission * 0.30);
 
   const formatPrice = (amount: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
@@ -142,23 +143,23 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
               {/* Commission Breakdown */}
               {saleAmount && parseFloat(saleAmount) > 0 && (
                 <div className="bg-green-50 rounded-xl p-4 mb-4">
-                  <h3 className="font-bold text-green-800 mb-3">💰 Commission Breakdown (1.25%)</h3>
+                  <h3 className="font-bold text-green-800 mb-3">💰 Commission Breakdown (1.49%)</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Sale Price:</span>
                       <span className="font-bold">{formatPrice(parseFloat(saleAmount))}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
-                      <span className="text-gray-600">Total Commission (1.25%):</span>
+                      <span className="text-gray-600">Total Commission (1.49%):</span>
                       <span className="font-bold text-green-700">{formatPrice(commission)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       <div className="bg-white rounded-lg p-2 text-center">
-                        <p className="text-xs text-gray-500">Your Share (45%)</p>
+                        <p className="text-xs text-gray-500">Your Share (70%)</p>
                         <p className="font-bold text-green-600">{formatPrice(brokerShare)}</p>
                       </div>
                       <div className="bg-white rounded-lg p-2 text-center">
-                        <p className="text-xs text-gray-500">Platform (55%)</p>
+                        <p className="text-xs text-gray-500">Platform (30%)</p>
                         <p className="font-bold text-blue-600">{formatPrice(platformShare)}</p>
                       </div>
                     </div>
@@ -168,7 +169,7 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
 
               {/* Info */}
               <div className="bg-blue-50 rounded-xl p-3 mb-4 text-sm text-blue-700">
-                📱 A QR code will be generated for <strong>{formatPrice(commission)}</strong>. 
+                📱 A QR code will be generated for <strong>{formatPrice(commission)}</strong>.
                 Show it to the seller to scan and pay via UPI/Card.
               </div>
 
@@ -205,11 +206,11 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
 
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-gray-500">Your Earnings</p>
+                  <p className="text-xs text-gray-500">Your Earnings (70%)</p>
                   <p className="font-bold text-green-600">{formatPrice(qrData.brokerShare)}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-xs text-gray-500">Platform Fee</p>
+                  <p className="text-xs text-gray-500">Platform Fee (30%)</p>
                   <p className="font-bold text-blue-600">{formatPrice(qrData.platformShare)}</p>
                 </div>
               </div>

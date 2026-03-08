@@ -32,10 +32,10 @@ export const createPaymentQR = async (req: any, res: Response) => {
     const broker = await Broker.findOne({ user: req.user._id });
     if (!broker) return res.status(404).json({ success: false, message: 'Broker profile not found' });
 
-    // Calculate 1.25% commission
-    const totalCommission = Math.round((saleAmount * 1.25) / 100);
-    const brokerShare = Math.round(totalCommission * 0.45);
-    const platformShare = Math.round(totalCommission * 0.55);
+    // Calculate 1.49% commission
+    const totalCommission = Math.round((saleAmount * 1.49) / 100);
+    const brokerShare = Math.round(totalCommission * 0.70);
+    const platformShare = Math.round(totalCommission * 0.30);
 
     // Create Cashfree order
     const orderId = `order_${Date.now()}_${broker._id.toString().slice(-6)}`;
@@ -76,7 +76,7 @@ export const createPaymentQR = async (req: any, res: Response) => {
       broker: broker._id,
       propertyType,
       saleAmount,
-      commissionRate: 1.25,
+      commissionRate: 1.49,
       totalCommission,
       brokerShare,
       platformShare,

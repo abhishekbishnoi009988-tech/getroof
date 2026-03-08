@@ -10,10 +10,9 @@ const TermsAndConditions: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-sm p-8 md:p-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Terms and Conditions</h1>
-          <p className="text-gray-600 mb-8">Last Updated: January 28, 2025</p>
+          <p className="text-gray-600 mb-8">Last Updated: March 8, 2026</p>
 
           <div className="prose prose-blue max-w-none space-y-6">
-            {/* Introduction */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
               <p className="text-gray-700">
@@ -24,7 +23,6 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Definitions */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Definitions</h2>
               <ul className="list-disc list-inside space-y-2 text-gray-700">
@@ -33,18 +31,15 @@ const TermsAndConditions: React.FC = () => {
                 <li><strong>"Buyer"</strong> means a User interested in purchasing or renting a property</li>
                 <li><strong>"Broker"</strong> means a verified User registered to facilitate property transactions</li>
                 <li><strong>"Property Listing"</strong> means information about a property posted on the Platform</li>
-                <li><strong>"Commission"</strong> means the fee paid to Brokers for successful transactions</li>
+                <li><strong>"Commission"</strong> means the fee charged from the Seller upon successful property sale, used to pay Brokers and the Platform</li>
               </ul>
             </section>
 
-            {/* User Accounts */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">3. User Accounts and Registration</h2>
-              
+
               <h3 className="text-xl font-semibold text-gray-800 mb-2">3.1 Account Creation</h3>
-              <p className="text-gray-700 mb-3">
-                To use certain features of GETROOF, you must create an account. You can register using:
-              </p>
+              <p className="text-gray-700 mb-3">To use certain features of GETROOF, you must create an account. You can register using:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mb-3">
                 <li>Email and password</li>
                 <li>Google OAuth authentication</li>
@@ -66,10 +61,9 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Property Listings */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Property Listings</h2>
-              
+
               <h3 className="text-xl font-semibold text-gray-800 mb-2">4.1 Listing Creation</h3>
               <p className="text-gray-700 mb-3">Sellers can list properties for FREE on GETROOF. When creating a listing, you must:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
@@ -96,10 +90,9 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Broker Program */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Broker Program</h2>
-              
+
               <h3 className="text-xl font-semibold text-gray-800 mb-2">5.1 Broker Registration</h3>
               <p className="text-gray-700 mb-3">Users can apply to become Brokers by providing:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
@@ -116,13 +109,18 @@ const TermsAndConditions: React.FC = () => {
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">5.3 Commission Structure</h3>
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-3">
+                <p className="text-yellow-800 font-semibold mb-2">⚠️ Important: Commission is charged from Seller only</p>
+                <p className="text-gray-700 text-sm">Buyers are NOT charged any commission. The 1.49% commission is collected solely from the seller upon successful property sale.</p>
+              </div>
               <p className="text-gray-700 mb-3">For successful property transactions facilitated by Brokers:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
-                <li><strong>Broker receives: 45%</strong> of the total commission</li>
-                <li><strong>GETROOF receives: 55%</strong> as platform fee</li>
+                <li><strong>Total commission: 1.49%</strong> of the final sale price (charged from seller only)</li>
+                <li><strong>Broker receives: 70%</strong> of the total commission</li>
+                <li><strong>GETROOF receives: 30%</strong> as platform fee</li>
               </ul>
               <p className="text-gray-700 mt-3">
-                Commission payments are processed within 2-3 business days after payment verification.
+                Commission is charged from the seller only — buyers are not charged any commission. Payments are processed within 2-3 business days after payment verification.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">5.4 Broker Responsibilities</h3>
@@ -136,13 +134,12 @@ const TermsAndConditions: React.FC = () => {
               </ul>
             </section>
 
-            {/* Payments */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Payments and Transactions</h2>
-              
+
               <h3 className="text-xl font-semibold text-gray-800 mb-2">6.1 Payment Processing</h3>
               <p className="text-gray-700">
-                All payments are processed through Razorpay, our third-party payment gateway. By making payments, you agree to Razorpay's terms and conditions.
+                All payments are processed through Cashfree, our third-party payment gateway. By making payments, you agree to Cashfree's terms and conditions.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.2 Payment Methods</h3>
@@ -157,10 +154,11 @@ const TermsAndConditions: React.FC = () => {
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.3 Commission Payment Flow</h3>
               <p className="text-gray-700 mb-3">For property sales:</p>
               <ol className="list-decimal list-inside space-y-1 text-gray-700">
-                <li>Buyer pays total amount via Razorpay</li>
-                <li>Payment is received in GETROOF's account</li>
-                <li>Commission split is calculated (45% Broker, 55% Platform)</li>
-                <li>Broker's share is transferred within 2-3 business days</li>
+                <li>Broker marks property as sold and enters the sale price</li>
+                <li>System calculates 1.49% commission on the sale price</li>
+                <li>A QR code is generated for the seller to pay the commission</li>
+                <li>Commission split is calculated (70% Broker, 30% Platform)</li>
+                <li>Broker's share is credited within 2-3 business days</li>
               </ol>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.4 Refunds</h3>
@@ -169,7 +167,6 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* User Conduct */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Prohibited Activities</h2>
               <p className="text-gray-700 mb-3">Users must NOT:</p>
@@ -185,7 +182,6 @@ const TermsAndConditions: React.FC = () => {
               </ul>
             </section>
 
-            {/* Intellectual Property */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Intellectual Property</h2>
               <p className="text-gray-700">
@@ -196,14 +192,11 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Disclaimer */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Disclaimers</h2>
-              
+
               <h3 className="text-xl font-semibold text-gray-800 mb-2">9.1 Platform Disclaimer</h3>
-              <p className="text-gray-700">
-                GETROOF is a marketplace platform only. We do NOT:
-              </p>
+              <p className="text-gray-700">GETROOF is a marketplace platform only. We do NOT:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 <li>Own, sell, or rent properties listed on the Platform</li>
                 <li>Guarantee the accuracy of property listings</li>
@@ -218,30 +211,24 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Limitation of Liability */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Limitation of Liability</h2>
-              <p className="text-gray-700">
-                To the maximum extent permitted by Indian law, GETROOF shall NOT be liable for:
-              </p>
+              <p className="text-gray-700">To the maximum extent permitted by Indian law, GETROOF shall NOT be liable for:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 <li>Property disputes between Users</li>
                 <li>Fraudulent listings or transactions</li>
                 <li>Loss of profits, data, or business opportunities</li>
                 <li>Indirect, incidental, or consequential damages</li>
-                <li>Issues arising from third-party services (Razorpay, Google)</li>
+                <li>Issues arising from third-party services (Cashfree, Google)</li>
               </ul>
               <p className="text-gray-700 mt-3">
                 Our total liability for any claim shall not exceed the amount of commission fees paid by you in the 6 months prior to the claim.
               </p>
             </section>
 
-            {/* Indemnification */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Indemnification</h2>
-              <p className="text-gray-700">
-                You agree to indemnify and hold GETROOF harmless from any claims, damages, losses, or expenses (including legal fees) arising from:
-              </p>
+              <p className="text-gray-700">You agree to indemnify and hold GETROOF harmless from any claims, damages, losses, or expenses (including legal fees) arising from:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 <li>Your violation of these Terms</li>
                 <li>Your property listings or transactions</li>
@@ -250,13 +237,12 @@ const TermsAndConditions: React.FC = () => {
               </ul>
             </section>
 
-            {/* Dispute Resolution */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Dispute Resolution</h2>
-              
+
               <h3 className="text-xl font-semibold text-gray-800 mb-2">12.1 Governing Law</h3>
               <p className="text-gray-700">
-                These Terms shall be governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in [Your City], India.
+                These Terms shall be governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Jaipur, Rajasthan, India.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">12.2 Arbitration</h3>
@@ -265,7 +251,6 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Changes to Terms */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Changes to Terms</h2>
               <p className="text-gray-700">
@@ -273,12 +258,9 @@ const TermsAndConditions: React.FC = () => {
               </p>
             </section>
 
-            {/* Contact */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">14. Contact Information</h2>
-              <p className="text-gray-700">
-                For questions about these Terms, please contact us at:
-              </p>
+              <p className="text-gray-700">For questions about these Terms, please contact us at:</p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
                 <p className="text-gray-800"><strong>GETROOF</strong></p>
                 <p className="text-gray-700">Email: legal.getroof@gmail.com</p>
@@ -287,7 +269,6 @@ const TermsAndConditions: React.FC = () => {
               </div>
             </section>
 
-            {/* Acknowledgment */}
             <section className="bg-gray-50 border-l-4 border-blue-600 p-6 rounded-r-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Acknowledgment</h3>
               <p className="text-gray-700">
@@ -296,12 +277,8 @@ const TermsAndConditions: React.FC = () => {
             </section>
           </div>
 
-          {/* Back Button */}
           <div className="mt-12 pt-8 border-t">
-            <Link
-              to="/"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-            >
+            <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
