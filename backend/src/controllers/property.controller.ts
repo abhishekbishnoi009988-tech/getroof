@@ -32,55 +32,26 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
     console.log('User:', req.user?.email);
 
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
+      return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
-    const {
-      title,
-      description,
-      price,
-      address,
-      propertyType,
-      listingType,
-      area,
-      bedrooms,
-      bathrooms,
-      amenities,
-      images,
-      video,
-      ownerPhone,
-    } = req.body;
+    const { title, description, price, address, propertyType, listingType, area, bedrooms, bathrooms, amenities, images, video, ownerPhone } = req.body;
 
-    // Validate required fields
     if (!title || !description || !price || !address || !propertyType || !listingType || !area) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide all required fields',
-      });
+      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    // Validate PIN code
     if (!address.pinCode || !/^\d{6}$/.test(address.pinCode)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a valid 6-digit PIN code',
-      });
+      return res.status(400).json({ success: false, message: 'Please provide a valid 6-digit PIN code' });
     }
 
-    // Upload images to Cloudinary
     let imageUrls: string[] = [];
     if (images && images.length > 0) {
       console.log(`📸 Uploading ${images.length} images to Cloudinary...`);
-      imageUrls = await Promise.all(
-        images.map((img: string) => uploadToCloudinary(img, 'image'))
-      );
+      imageUrls = await Promise.all(images.map((img: string) => uploadToCloudinary(img, 'image')));
       console.log('✅ Images uploaded');
     }
 
-    // Upload video to Cloudinary
     let videoUrl: string | undefined;
     if (video) {
       console.log('🎬 Uploading video to Cloudinary...');
@@ -88,20 +59,12 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       console.log('✅ Video uploaded:', videoUrl);
     }
 
-    // Create property
     const property = await Property.create({
       seller: req.user._id,
-      title,
-      description,
+      title, description,
       price: Number(price),
-      address: {
-        street: address.street,
-        city: address.city,
-        state: address.state,
-        pinCode: address.pinCode,
-      },
-      propertyType,
-      listingType,
+      address: { street: address.street, city: address.city, state: address.state, pinCode: address.pinCode },
+      propertyType, listingType,
       area: Number(area),
       bedrooms: bedrooms ? Number(bedrooms) : undefined,
       bathrooms: bathrooms ? Number(bathrooms) : undefined,
@@ -121,10 +84,7 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
     });
   } catch (error: any) {
     console.error('❌ Upload house error:', error);
-    res.status(400).json({
-      success: false,
-      message: error.message || 'Failed to upload property',
-    });
+    res.status(400).json({ success: false, message: error.message || 'Failed to upload property' });
   }
 };
 
@@ -134,46 +94,35 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
 export const createProperty = async (req: any, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
+      return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
     req.body.seller = req.user._id;
-    
+
     if (req.user.role === 'broker') {
       req.body.listedBy = 'broker';
       const broker = await Broker.findOne({ user: req.user._id });
-      if (broker) {
-        req.body.listedByBroker = broker._id;
-      }
+      if (broker) req.body.listedByBroker = broker._id;
     } else {
       req.body.listedBy = 'owner';
     }
 
     const property = await Property.create(req.body);
-
-    res.status(201).json({
-      success: true,
-      data: property,
-    });
+    res.status(201).json({ success: true, data: property });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
 // @desc    Get all properties (with PIN code filter)
+//          Available properties shown first, rented at bottom
 // @route   GET /api/v1/properties
 // @access  Public
 export const getAllProperties = async (req: any, res: Response) => {
   try {
     const { listingType, minPrice, maxPrice, pinCode, propertyType } = req.query;
 
-    const query: any = { status: 'active' };
+    const query: any = {};
 
     if (pinCode) query['address.pinCode'] = pinCode;
     if (listingType) query.listingType = listingType;
@@ -185,9 +134,21 @@ export const getAllProperties = async (req: any, res: Response) => {
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
+    // For rent listings: show active first, rented at bottom
+    // For sale listings: only show active
+    if (listingType === 'rent') {
+      query.status = { $in: ['active', 'rented'] };
+    } else {
+      query.status = 'active';
+    }
+
     const properties = await Property.find(query)
       .populate('seller', 'name email phone')
-      .sort('-createdAt');
+      .sort({ 
+        // active comes before rented (a < r alphabetically)
+        status: 1,
+        createdAt: -1 
+      });
 
     res.status(200).json({
       success: true,
@@ -195,10 +156,7 @@ export const getAllProperties = async (req: any, res: Response) => {
       data: properties,
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -210,22 +168,24 @@ export const searchByPinCodes = async (req: any, res: Response) => {
     const { pinCodes, listingType } = req.body;
 
     if (!pinCodes || !Array.isArray(pinCodes) || pinCodes.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide PIN codes array',
-      });
+      return res.status(400).json({ success: false, message: 'Please provide PIN codes array' });
     }
 
     const query: any = {
-      status: 'active',
       'address.pinCode': { $in: pinCodes },
     };
+
+    if (listingType === 'rent') {
+      query.status = { $in: ['active', 'rented'] };
+    } else {
+      query.status = 'active';
+    }
 
     if (listingType) query.listingType = listingType;
 
     const properties = await Property.find(query)
       .populate('seller', 'name email phone')
-      .sort('-createdAt');
+      .sort({ status: 1, createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -233,10 +193,43 @@ export const searchByPinCodes = async (req: any, res: Response) => {
       data: properties,
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Mark rental property as rented
+// @route   PATCH /api/v1/properties/:id/mark-rented
+// @access  Private (Owner only)
+export const markAsRented = async (req: any, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+
+    const property = await Property.findById(req.params.id);
+
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+
+    if (property.seller.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ success: false, message: 'Not authorized to update this property' });
+    }
+
+    if (property.listingType !== 'rent') {
+      return res.status(400).json({ success: false, message: 'Only rental properties can be marked as rented' });
+    }
+
+    property.status = property.status === 'rented' ? 'active' : 'rented';
+    await property.save();
+
+    res.status(200).json({
+      success: true,
+      message: property.status === 'rented' ? 'Property marked as rented!' : 'Property marked as available!',
+      data: property,
     });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -245,27 +238,15 @@ export const searchByPinCodes = async (req: any, res: Response) => {
 // @access  Public
 export const getProperty = async (req: any, res: Response) => {
   try {
-    const property = await Property.findById(req.params.id).populate(
-      'seller',
-      'name email phone'
-    );
+    const property = await Property.findById(req.params.id).populate('seller', 'name email phone');
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: 'Property not found',
-      });
+      return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: property,
-    });
+    res.status(200).json({ success: true, data: property });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -275,45 +256,24 @@ export const getProperty = async (req: any, res: Response) => {
 export const updateProperty = async (req: any, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
+      return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
     let property = await Property.findById(req.params.id);
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: 'Property not found',
-      });
+      return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    const sellerId = property.seller.toString();
-    const userId = req.user._id.toString();
-    
-    if (sellerId !== userId && req.user.role !== 'admin') {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized to update this property',
-      });
+    if (property.seller.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Not authorized to update this property' });
     }
 
-    property = await Property.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    property = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 
-    res.status(200).json({
-      success: true,
-      data: property,
-    });
+    res.status(200).json({ success: true, data: property });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -323,42 +283,24 @@ export const updateProperty = async (req: any, res: Response) => {
 export const deleteProperty = async (req: any, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
+      return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
     const property = await Property.findById(req.params.id);
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: 'Property not found',
-      });
+      return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    const sellerId = property.seller.toString();
-    const userId = req.user._id.toString();
-    
-    if (sellerId !== userId && req.user.role !== 'admin') {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized to delete this property',
-      });
+    if (property.seller.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Not authorized to delete this property' });
     }
 
     await property.deleteOne();
 
-    res.status(200).json({
-      success: true,
-      data: {},
-    });
+    res.status(200).json({ success: true, data: {} });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -368,10 +310,7 @@ export const deleteProperty = async (req: any, res: Response) => {
 export const getMyProperties = async (req: any, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
+      return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
     const properties = await Property.find({ seller: req.user._id }).sort('-createdAt');
@@ -382,10 +321,7 @@ export const getMyProperties = async (req: any, res: Response) => {
       data: properties,
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -395,51 +331,21 @@ export const getMyProperties = async (req: any, res: Response) => {
 export const uploadPropertyImages = async (req: any, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
+      return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
     const property = await Property.findById(req.params.id);
 
     if (!property) {
-      return res.status(404).json({
-        success: false,
-        message: 'Property not found',
-      });
+      return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    const sellerId = property.seller.toString();
-    const userId = req.user._id.toString();
-    
-    if (sellerId !== userId && req.user.role !== 'admin') {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized to upload images for this property',
-      });
+    if (property.seller.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Not authorized to upload images for this property' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Images uploaded successfully',
-    });
+    res.status(200).json({ success: true, message: 'Images uploaded successfully' });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-

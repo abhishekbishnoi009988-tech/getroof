@@ -1,12 +1,10 @@
 [build]
-  base = "frontend"
   publish = "dist"
   command = "npm run build"
 
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
     Cache-Control = "no-cache"
 
 [[redirects]]

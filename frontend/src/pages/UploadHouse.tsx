@@ -83,9 +83,12 @@ const UploadHouse: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{6}$/.test(formData.address.pinCode)) { toast.error('Please enter a valid 6-digit PIN code'); return; }
-    if (formType === 'rent' && (!formData.ownerPhone || !/^[6-9]\d{9}$/.test(formData.ownerPhone))) {
+
+    // Phone is mandatory for BOTH sell and rent
+    if (!formData.ownerPhone || !/^[6-9]\d{9}$/.test(formData.ownerPhone)) {
       toast.error('Please enter a valid 10-digit mobile number'); return;
     }
+
     setLoading(true);
     try {
       let imageBase64: string[] = [];
@@ -109,7 +112,7 @@ const UploadHouse: React.FC = () => {
         area: Number(formData.area), bedrooms: Number(formData.bedrooms) || 0,
         bathrooms: Number(formData.bathrooms) || 0, amenities: formData.amenities,
         images: imageBase64, video: videoBase64,
-        ...(formType === 'rent' && { ownerPhone: formData.ownerPhone }),
+        ownerPhone: formData.ownerPhone, // always send phone
       });
       toast.dismiss();
       if (response.data.success) { toast.success('Property uploaded successfully!'); navigate('/my-properties'); }
@@ -165,11 +168,11 @@ const UploadHouse: React.FC = () => {
             </div>
             {isRent ? (
               <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800"><strong>🔑 Rent Listing:</strong> No broker involved. Tenants will call you directly!</p>
+                <p className="text-sm text-green-800"><strong>🔑 Rent Listing:</strong> Your number is only shared with brokers, not public.</p>
               </div>
             ) : (
               <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800"><strong>Free Listing!</strong> Your property will be live immediately.</p>
+                <p className="text-sm text-blue-800"><strong>Free Listing!</strong> Your number is only shared with brokers when a buyer shows interest — never shown publicly.</p>
               </div>
             )}
           </div>
@@ -252,15 +255,24 @@ const UploadHouse: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700">Bathrooms</label>
                   <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} placeholder="2" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
-                {isRent && (
-                  <div className="sm:col-span-2">
-                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                      <label className="block text-sm font-bold text-green-800 mb-2">📞 Your Mobile Number * (Tenants will contact you directly)</label>
-                      <input type="tel" name="ownerPhone" required value={formData.ownerPhone} onChange={handleInputChange} placeholder="9876543210" pattern="[6-9][0-9]{9}" maxLength={10} className="block w-full rounded-md border-2 border-green-400 px-3 py-2 text-lg font-semibold focus:border-green-600 focus:outline-none" />
-                      <p className="text-xs text-green-700 mt-2">✅ 10-digit mobile number. Tenants will call you directly.</p>
-                    </div>
+
+                {/* Phone - mandatory for BOTH sell and rent */}
+                <div className="sm:col-span-2">
+                  <div className={`border-2 rounded-lg p-4 ${isRent ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-300'}`}>
+                    <label className={`block text-sm font-bold mb-2 ${isRent ? 'text-green-800' : 'text-blue-800'}`}>
+                      📞 Your Mobile Number * <span className="font-normal">(Only visible to broker — never shown to buyers/tenants publicly)</span>
+                    </label>
+                    <input
+                      type="tel" name="ownerPhone" required
+                      value={formData.ownerPhone} onChange={handleInputChange}
+                      placeholder="9876543210" pattern="[6-9][0-9]{9}" maxLength={10}
+                      className={`block w-full rounded-md border-2 px-3 py-2 text-lg font-semibold focus:outline-none ${isRent ? 'border-green-400 focus:border-green-600' : 'border-blue-400 focus:border-blue-600'}`}
+                    />
+                    <p className={`text-xs mt-2 ${isRent ? 'text-green-700' : 'text-blue-700'}`}>
+                      🔒 Your number is shared with the broker only when a buyer shows interest — so broker can contact both you and the buyer to close the deal.
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
             </div>
 

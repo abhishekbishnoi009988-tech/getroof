@@ -116,7 +116,6 @@ const Navbar: React.FC = () => {
                 {user.role === 'broker' && (
                   <>
                     <Link to="/broker/notifications" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">🔔 Notifications</Link>
-                    <Link to="/broker/record-sale" className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700">Record Sale</Link>
                     <Link to="/broker/payment-history" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">💰 Earnings</Link>
                     <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">✓ Broker</span>
                   </>
@@ -166,7 +165,6 @@ const Navbar: React.FC = () => {
                 {user.role === 'broker' && (
                   <>
                     <Link to="/broker/notifications" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsMobileMenuOpen(false)}>🔔 Notifications</Link>
-                    <Link to="/broker/record-sale" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsMobileMenuOpen(false)}>Record Sale</Link>
                     <Link to="/broker/payment-history" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsMobileMenuOpen(false)}>💰 Earnings</Link>
                   </>
                 )}
@@ -193,4 +191,3 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
- 
