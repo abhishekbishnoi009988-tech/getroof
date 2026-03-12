@@ -13,10 +13,6 @@ const PropertyDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
 
-  // Commission agreement popup
-  const [showAgreementPopup, setShowAgreementPopup] = useState(false);
-  const [agreementChecked, setAgreementChecked] = useState(false);
-
   // Modal steps: null | 'broker-list' | 'contact-form'
   const [modalStep, setModalStep] = useState<null | 'broker-list' | 'contact-form'>(null);
   const [brokers, setBrokers] = useState<any[]>([]);
@@ -42,19 +38,8 @@ const PropertyDetail: React.FC = () => {
     }
   };
 
-  // Step 1: Show agreement popup first
-  const handleContactBrokerClick = () => {
-    setShowAgreementPopup(true);
-    setAgreementChecked(false);
-  };
-
-  // Step 2: After agreement, load brokers
-  const handleAgreementProceed = async () => {
-    if (!agreementChecked) {
-      toast.error('Please agree to the commission terms to proceed');
-      return;
-    }
-    setShowAgreementPopup(false);
+  // Directly load brokers — no popup
+  const handleContactBrokerClick = async () => {
     setBrokersLoading(true);
     setModalStep('broker-list');
     try {
@@ -231,100 +216,21 @@ const PropertyDetail: React.FC = () => {
             </div>
           ) : (
             <div>
+              {/* CHANGE 1: Simple inline notice replacing the popup */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800">
+                  ℹ️ <strong>Buyers are not charged anything.</strong> Only the seller pays a <strong>1.49% commission</strong> upon successful sale of the property.
+                </p>
+              </div>
               <button onClick={handleContactBrokerClick}
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 text-lg font-semibold w-full sm:w-auto flex items-center justify-center space-x-2">
                 <Phone className="w-5 h-5" />
                 <span>Contact Broker</span>
               </button>
-              <p className="text-xs text-gray-500 mt-2">
-                ℹ️ 1.49% commission charged from seller only upon successful sale
-              </p>
             </div>
           )}
         </div>
       </div>
-
-      {/* COMMISSION AGREEMENT POPUP */}
-      {showAgreementPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
-            <div className="bg-blue-600 text-white p-5">
-              <h2 className="text-xl font-bold">📋 Commission Agreement</h2>
-              <p className="text-blue-100 text-sm mt-1">Please read carefully before proceeding</p>
-            </div>
-
-            <div className="p-6">
-              <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 mb-5">
-                <p className="text-yellow-800 font-bold text-lg mb-2">⚠️ Important Notice for Seller</p>
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  Upon successful sale of your property through GETROOF, a commission of{' '}
-                  <strong className="text-blue-600 text-base">1.49%</strong> of the final sale price
-                  will be charged <strong>from the seller only</strong>. Buyers are not charged anything.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 mb-5">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Example:</p>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Property Sale Price:</span>
-                    <span className="font-semibold">₹50,00,000</span>
-                  </div>
-                  <div className="flex justify-between text-blue-700 font-semibold">
-                    <span>Commission (1.49%):</span>
-                    <span>₹74,500</span>
-                  </div>
-                  <div className="flex justify-between text-green-600 text-xs mt-1 pt-1 border-t">
-                    <span>Buyer pays:</span>
-                    <span>Nothing extra ✅</span>
-                  </div>
-                </div>
-              </div>
-
-              <ul className="space-y-2 text-sm text-gray-700 mb-5">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold mt-0.5">✓</span>
-                  <span>Commission is charged <strong>only from the seller</strong>, not the buyer</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold mt-0.5">✓</span>
-                  <span>Payment is collected only after the property is successfully sold</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-500 font-bold mt-0.5">✓</span>
-                  <span>A verified broker will contact you to facilitate the deal</span>
-                </li>
-              </ul>
-
-              <label className="flex items-start gap-3 cursor-pointer mb-5 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <input
-                  type="checkbox"
-                  checked={agreementChecked}
-                  onChange={(e) => setAgreementChecked(e.target.checked)}
-                  className="mt-0.5 w-5 h-5 accent-blue-600 flex-shrink-0"
-                />
-                <span className="text-sm text-gray-700">
-                  I understand and agree that <strong>1.49% commission</strong> will be charged from me (the seller) upon successful sale of this property through GETROOF.
-                </span>
-              </label>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowAgreementPopup(false)}
-                  className="flex-1 border border-gray-300 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAgreementProceed}
-                  disabled={!agreementChecked}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-                  Proceed →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* STEP 1 - Broker List Modal */}
       {modalStep === 'broker-list' && (

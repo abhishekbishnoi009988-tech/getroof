@@ -64,7 +64,7 @@ export const createPaymentQR = async (req: any, res: Response) => {
 
     // Generate QR code for this order
     const qrResponse = await axios.post(
-      `${CASHFREE_BASE_URL}/orders/${cfOrderId}/payment-links/qrcode`,
+      `${CASHFREE_BASE_URL}/orders/${cfOrderId}/payments/qrcode`,
       {},
       { headers: cashfreeHeaders }
     );

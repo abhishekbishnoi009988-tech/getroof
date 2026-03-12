@@ -13,13 +13,29 @@ const UploadHouse: React.FC = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string>('');
-  const [formType, setFormType] = useState<'choose' | 'sell' | 'rent'>('choose');
+
+  // formType: 'choose' | 'sell' | 'rent-choose' | 'rent-house' | 'rent-hostel' | 'rent-pg'
+  const [formType, setFormType] = useState<'choose' | 'sell' | 'rent-choose' | 'rent-house' | 'rent-hostel' | 'rent-pg'>('choose');
+
+  const [commissionAgreed, setCommissionAgreed] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '', description: '', price: 0,
     address: { street: '', city: '', state: '', pinCode: '' },
     propertyType: 'house', listingType: 'sale',
     area: 0, bedrooms: 0, bathrooms: 0, amenities: [], images: [], ownerPhone: '',
+    // Hostel/PG specific
+    hostelName: '',
+    gender: 'any', // 'boys' | 'girls' | 'coed' | 'any'
+    hostelAmenities: [] as string[],
+    rules: '',
+    timings: '',
   });
+
+  const hostelAmenityOptions = [
+    'WiFi', 'Food/Mess', 'AC', 'Laundry', 'Hot Water', 'Power Backup',
+    'Security', 'CCTV', 'Parking', 'Study Room', 'Common Room', 'Gym',
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -29,6 +45,15 @@ const UploadHouse: React.FC = () => {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const toggleHostelAmenity = (amenity: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      hostelAmenities: prev.hostelAmenities.includes(amenity)
+        ? prev.hostelAmenities.filter((a) => a !== amenity)
+        : [...prev.hostelAmenities, amenity],
+    }));
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,10 +108,11 @@ const UploadHouse: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{6}$/.test(formData.address.pinCode)) { toast.error('Please enter a valid 6-digit PIN code'); return; }
-
-    // Phone is mandatory for BOTH sell and rent
     if (!formData.ownerPhone || !/^[6-9]\d{9}$/.test(formData.ownerPhone)) {
       toast.error('Please enter a valid 10-digit mobile number'); return;
+    }
+    if (formType === 'sell' && !commissionAgreed) {
+      toast.error('Please agree to the commission terms before uploading'); return;
     }
 
     setLoading(true);
@@ -105,15 +131,38 @@ const UploadHouse: React.FC = () => {
         toast.dismiss();
       }
       toast.loading('Saving property...');
-      const response = await API.post('/properties/upload-house', {
-        title: formData.title, description: formData.description, price: Number(formData.price),
-        address: formData.address, propertyType: formData.propertyType,
-        listingType: formType === 'rent' ? 'rent' : 'sale',
-        area: Number(formData.area), bedrooms: Number(formData.bedrooms) || 0,
-        bathrooms: Number(formData.bathrooms) || 0, amenities: formData.amenities,
-        images: imageBase64, video: videoBase64,
-        ownerPhone: formData.ownerPhone, // always send phone
-      });
+
+      // Determine propertyType based on formType
+      let resolvedPropertyType = formData.propertyType;
+      if (formType === 'rent-hostel') resolvedPropertyType = 'hostel';
+      else if (formType === 'rent-pg') resolvedPropertyType = 'pg';
+
+      const payload: any = {
+        title: formData.title,
+        description: formData.description,
+        price: Number(formData.price),
+        address: formData.address,
+        propertyType: resolvedPropertyType,
+        listingType: formType === 'sell' ? 'sale' : 'rent',
+        area: Number(formData.area),
+        bedrooms: Number(formData.bedrooms) || 0,
+        bathrooms: Number(formData.bathrooms) || 0,
+        amenities: formData.amenities,
+        images: imageBase64,
+        video: videoBase64,
+        ownerPhone: formData.ownerPhone,
+      };
+
+      // Add hostel/pg specific fields
+      if (formType === 'rent-hostel' || formType === 'rent-pg') {
+        payload.hostelName = formData.hostelName;
+        payload.gender = formData.gender;
+        payload.hostelAmenities = formData.hostelAmenities;
+        payload.rules = formData.rules;
+        payload.timings = formData.timings;
+      }
+
+      const response = await API.post('/properties/upload-house', payload);
       toast.dismiss();
       if (response.data.success) { toast.success('Property uploaded successfully!'); navigate('/my-properties'); }
     } catch (error: any) {
@@ -122,6 +171,19 @@ const UploadHouse: React.FC = () => {
     } finally { setLoading(false); setUploadingImages(false); }
   };
 
+  const resetForm = () => {
+    setImageFiles([]); setImagePreviews([]); setVideoFile(null); setVideoPreview('');
+    setFormData({
+      title: '', description: '', price: 0,
+      address: { street: '', city: '', state: '', pinCode: '' },
+      propertyType: 'house', listingType: 'sale',
+      area: 0, bedrooms: 0, bathrooms: 0, amenities: [], images: [], ownerPhone: '',
+      hostelName: '', gender: 'any', hostelAmenities: [], rules: '', timings: '',
+    });
+    setCommissionAgreed(false);
+  };
+
+  // ─── SCREEN 1: Choose Sell / Rent ───────────────────────────────────────────
   if (formType === 'choose') {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -131,14 +193,14 @@ const UploadHouse: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Your Property</h1>
             <p className="text-gray-500 mb-10">What would you like to do with your property?</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <button onClick={() => { setFormType('sell'); setFormData((p) => ({ ...p, listingType: 'sale' })); }}
+              <button onClick={() => { setFormType('sell'); setCommissionAgreed(false); resetForm(); }}
                 className="border-2 border-blue-200 hover:border-blue-500 rounded-2xl p-8 text-left transition-all hover:shadow-lg bg-blue-50 hover:bg-blue-100">
                 <div className="text-5xl mb-4">🏷️</div>
                 <h2 className="text-2xl font-bold text-blue-700 mb-2">Sell</h2>
                 <p className="text-gray-600 text-sm">List your property for sale. Our brokers will connect you with serious buyers.</p>
                 <div className="mt-4 bg-blue-600 text-white rounded-xl py-2 px-4 text-sm font-semibold">List for Sale →</div>
               </button>
-              <button onClick={() => { setFormType('rent'); setFormData((p) => ({ ...p, listingType: 'rent' })); }}
+              <button onClick={() => setFormType('rent-choose')}
                 className="border-2 border-green-200 hover:border-green-500 rounded-2xl p-8 text-left transition-all hover:shadow-lg bg-green-50 hover:bg-green-100">
                 <div className="text-5xl mb-4">🔑</div>
                 <h2 className="text-2xl font-bold text-green-700 mb-2">Rent</h2>
@@ -153,31 +215,128 @@ const UploadHouse: React.FC = () => {
     );
   }
 
-  const isRent = formType === 'rent';
+  // ─── SCREEN 2: Choose Rent Type ─────────────────────────────────────────────
+  if (formType === 'rent-choose') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="max-w-3xl mx-auto px-4 py-16">
+          <div className="bg-white rounded-2xl shadow-lg p-10 text-center">
+            <button onClick={() => setFormType('choose')} className="text-sm text-gray-500 hover:text-gray-700 mb-6 flex items-center gap-1">← Back</button>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">What are you renting out?</h1>
+            <p className="text-gray-500 mb-10">Choose the type of property you want to list for rent</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <button onClick={() => { resetForm(); setFormType('rent-house'); }}
+                className="border-2 border-green-200 hover:border-green-500 rounded-2xl p-6 text-left transition-all hover:shadow-lg bg-green-50 hover:bg-green-100">
+                <div className="text-5xl mb-3">🏠</div>
+                <h2 className="text-xl font-bold text-green-700 mb-1">House / Flat</h2>
+                <p className="text-gray-500 text-sm">Apartment, villa, independent house, shop etc.</p>
+              </button>
+              <button onClick={() => { resetForm(); setFormType('rent-hostel'); }}
+                className="border-2 border-orange-200 hover:border-orange-500 rounded-2xl p-6 text-left transition-all hover:shadow-lg bg-orange-50 hover:bg-orange-100">
+                <div className="text-5xl mb-3">🏨</div>
+                <h2 className="text-xl font-bold text-orange-700 mb-1">Hostel</h2>
+                <p className="text-gray-500 text-sm">Shared accommodation with common facilities</p>
+              </button>
+              <button onClick={() => { resetForm(); setFormType('rent-pg'); }}
+                className="border-2 border-purple-200 hover:border-purple-500 rounded-2xl p-6 text-left transition-all hover:shadow-lg bg-purple-50 hover:bg-purple-100">
+                <div className="text-5xl mb-3">🛏️</div>
+                <h2 className="text-xl font-bold text-purple-700 mb-1">PG</h2>
+                <p className="text-gray-500 text-sm">Paying guest accommodation with meals/facilities</p>
+              </button>
+            </div>
+            <button onClick={() => navigate(-1)} className="mt-8 text-gray-500 hover:text-gray-700 text-sm underline">Cancel</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // ─── FORM HELPERS ────────────────────────────────────────────────────────────
+  const isSell = formType === 'sell';
+  const isHostelOrPG = formType === 'rent-hostel' || formType === 'rent-pg';
+  const formTypeLabel = formType === 'sell' ? 'List Property for Sale'
+    : formType === 'rent-house' ? 'List House / Flat for Rent'
+    : formType === 'rent-hostel' ? 'List Hostel for Rent'
+    : 'List PG for Rent';
+  const formTypeEmoji = formType === 'sell' ? '🏷️'
+    : formType === 'rent-house' ? '🏠'
+    : formType === 'rent-hostel' ? '🏨'
+    : '🛏️';
+  const accentColor = isSell ? 'blue' : formType === 'rent-hostel' ? 'orange' : formType === 'rent-pg' ? 'purple' : 'green';
+  const backTarget = isSell ? 'choose' : 'rent-choose';
+
+  const submitBtnClass = isSell ? 'bg-blue-600 hover:bg-blue-700'
+    : formType === 'rent-hostel' ? 'bg-orange-500 hover:bg-orange-600'
+    : formType === 'rent-pg' ? 'bg-purple-600 hover:bg-purple-700'
+    : 'bg-green-600 hover:bg-green-700';
+
+  // ─── MAIN FORM ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="mb-8">
-            <button onClick={() => setFormType('choose')} className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1">← Back</button>
+            <button onClick={() => setFormType(backTarget as any)} className="text-sm text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1">← Back</button>
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">{isRent ? '🔑' : '🏷️'}</span>
-              <h1 className="text-3xl font-bold text-gray-900">{isRent ? 'List Property for Rent' : 'List Property for Sale'}</h1>
+              <span className="text-3xl">{formTypeEmoji}</span>
+              <h1 className="text-3xl font-bold text-gray-900">{formTypeLabel}</h1>
             </div>
-            {isRent ? (
-              <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800"><strong>🔑 Rent Listing:</strong> Your number is only shared with brokers, not public.</p>
-              </div>
-            ) : (
-              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800"><strong>Free Listing!</strong> Your number is only shared with brokers when a buyer shows interest — never shown publicly.</p>
-              </div>
-            )}
+            <div className={`mt-4 rounded-lg p-4 ${
+              isSell ? 'bg-blue-50 border border-blue-200' :
+              formType === 'rent-hostel' ? 'bg-orange-50 border border-orange-200' :
+              formType === 'rent-pg' ? 'bg-purple-50 border border-purple-200' :
+              'bg-green-50 border border-green-200'
+            }`}>
+              <p className={`text-sm font-medium ${
+                isSell ? 'text-blue-800' :
+                formType === 'rent-hostel' ? 'text-orange-800' :
+                formType === 'rent-pg' ? 'text-purple-800' :
+                'text-green-800'
+              }`}>
+                {isSell ? '🔒 Free Listing! Your number is only shared with brokers when a buyer shows interest — never shown publicly.'
+                  : isHostelOrPG ? `🔒 Your number is only shared with interested tenants — never shown publicly.`
+                  : '🔒 Rent Listing: Your number is only shared with brokers, not public.'}
+              </p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            {/* ── Hostel/PG Specific: Hostel Name ── */}
+            {isHostelOrPG && (
+              <div className="border-b border-gray-200 pb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  {formType === 'rent-hostel' ? '🏨 Hostel Details' : '🛏️ PG Details'}
+                </h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                      {formType === 'rent-hostel' ? 'Hostel Name *' : 'PG Name *'}
+                    </label>
+                    <input
+                      type="text" name="hostelName" required
+                      value={formData.hostelName} onChange={handleInputChange}
+                      placeholder={formType === 'rent-hostel' ? 'e.g., Sunrise Boys Hostel' : 'e.g., Green PG for Girls'}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">This name will be shown to tenants on your listing</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Gender *</label>
+                    <select name="gender" value={formData.gender} onChange={handleInputChange}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none">
+                      <option value="boys">Boys Only</option>
+                      <option value="girls">Girls Only</option>
+                      <option value="coed">Co-ed (Boys & Girls)</option>
+                      <option value="any">Any</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Photos */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">📸 Property Photos (Up to 5)</h2>
@@ -226,88 +385,212 @@ const UploadHouse: React.FC = () => {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">Property Title *</label>
-                  <input type="text" name="title" required value={formData.title} onChange={handleInputChange} placeholder="e.g., Beautiful 3BHK Villa in Green Park" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  <input type="text" name="title" required value={formData.title} onChange={handleInputChange}
+                    placeholder={isHostelOrPG ? 'e.g., Affordable Hostel near University' : 'e.g., Beautiful 3BHK Villa in Green Park'}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">Description *</label>
-                  <textarea name="description" required value={formData.description} onChange={handleInputChange} rows={4} placeholder="Describe your property..." className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  <textarea name="description" required value={formData.description} onChange={handleInputChange} rows={4}
+                    placeholder="Describe your property..."
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
+                {!isHostelOrPG && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Property Type *</label>
+                    <select name="propertyType" required value={formData.propertyType} onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none">
+                      <option value="house">House</option>
+                      <option value="apartment">Apartment</option>
+                      <option value="villa">Villa</option>
+                      <option value="plot">Plot</option>
+                      <option value="commercial">Commercial</option>
+                    </select>
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Property Type *</label>
-                  <select name="propertyType" required value={formData.propertyType} onChange={handleInputChange} className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none">
-                    <option value="house">House</option><option value="apartment">Apartment</option>
-                    <option value="villa">Villa</option><option value="plot">Plot</option><option value="commercial">Commercial</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {isSell ? 'Price (₹) *' : isHostelOrPG ? 'Rent per Bed/Room per Month (₹) *' : 'Rent per Month (₹) *'}
+                  </label>
+                  <input type="number" name="price" required value={formData.price} onChange={handleInputChange}
+                    placeholder={isSell ? '5000000' : isHostelOrPG ? '3000' : '8000'}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">{isRent ? 'Rent per Month (₹) *' : 'Price (₹) *'}</label>
-                  <input type="number" name="price" required value={formData.price} onChange={handleInputChange} placeholder={isRent ? '8000' : '5000000'} className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Area (sq ft) *</label>
-                  <input type="number" name="area" required value={formData.area} onChange={handleInputChange} placeholder="1200" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Bedrooms</label>
-                  <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} placeholder="3" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Bathrooms</label>
-                  <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} placeholder="2" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
-                </div>
+                {!isHostelOrPG && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Area (sq ft) *</label>
+                    <input type="number" name="area" required value={formData.area} onChange={handleInputChange} placeholder="1200"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  </div>
+                )}
+                {!isHostelOrPG && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Bedrooms</label>
+                    <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} placeholder="3"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  </div>
+                )}
+                {!isHostelOrPG && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Bathrooms</label>
+                    <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} placeholder="2"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  </div>
+                )}
 
-                {/* Phone - mandatory for BOTH sell and rent */}
+                {/* Phone */}
                 <div className="sm:col-span-2">
-                  <div className={`border-2 rounded-lg p-4 ${isRent ? 'bg-green-50 border-green-300' : 'bg-blue-50 border-blue-300'}`}>
-                    <label className={`block text-sm font-bold mb-2 ${isRent ? 'text-green-800' : 'text-blue-800'}`}>
-                      📞 Your Mobile Number * <span className="font-normal">(Only visible to broker — never shown to buyers/tenants publicly)</span>
+                  <div className={`border-2 rounded-lg p-4 ${
+                    isSell ? 'bg-blue-50 border-blue-300' :
+                    formType === 'rent-hostel' ? 'bg-orange-50 border-orange-300' :
+                    formType === 'rent-pg' ? 'bg-purple-50 border-purple-300' :
+                    'bg-green-50 border-green-300'
+                  }`}>
+                    <label className={`block text-sm font-bold mb-2 ${
+                      isSell ? 'text-blue-800' :
+                      formType === 'rent-hostel' ? 'text-orange-800' :
+                      formType === 'rent-pg' ? 'text-purple-800' :
+                      'text-green-800'
+                    }`}>
+                      📞 Your Mobile Number * <span className="font-normal">(Only visible to broker — never shown publicly)</span>
                     </label>
                     <input
                       type="tel" name="ownerPhone" required
                       value={formData.ownerPhone} onChange={handleInputChange}
                       placeholder="9876543210" pattern="[6-9][0-9]{9}" maxLength={10}
-                      className={`block w-full rounded-md border-2 px-3 py-2 text-lg font-semibold focus:outline-none ${isRent ? 'border-green-400 focus:border-green-600' : 'border-blue-400 focus:border-blue-600'}`}
+                      className={`block w-full rounded-md border-2 px-3 py-2 text-lg font-semibold focus:outline-none ${
+                        isSell ? 'border-blue-400 focus:border-blue-600' :
+                        formType === 'rent-hostel' ? 'border-orange-400 focus:border-orange-600' :
+                        formType === 'rent-pg' ? 'border-purple-400 focus:border-purple-600' :
+                        'border-green-400 focus:border-green-600'
+                      }`}
                     />
-                    <p className={`text-xs mt-2 ${isRent ? 'text-green-700' : 'text-blue-700'}`}>
-                      🔒 Your number is shared with the broker only when a buyer shows interest — so broker can contact both you and the buyer to close the deal.
+                    <p className={`text-xs mt-2 ${
+                      isSell ? 'text-blue-700' :
+                      formType === 'rent-hostel' ? 'text-orange-700' :
+                      formType === 'rent-pg' ? 'text-purple-700' :
+                      'text-green-700'
+                    }`}>
+                      🔒 Your number is shared with the broker only when a tenant shows interest.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* ── Hostel/PG Specific: Amenities + Rules + Timings ── */}
+            {isHostelOrPG && (
+              <div className="border-b border-gray-200 pb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">🏠 Facilities & Rules</h2>
+
+                {/* Amenities */}
+                <div className="mb-5">
+                  <label className="block text-sm font-bold text-gray-700 mb-3">Amenities Available</label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {hostelAmenityOptions.map((amenity) => (
+                      <button
+                        key={amenity} type="button"
+                        onClick={() => toggleHostelAmenity(amenity)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${
+                          formData.hostelAmenities.includes(amenity)
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        {amenity}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rules */}
+                <div className="mb-5">
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Rules & Regulations</label>
+                  <textarea
+                    name="rules" value={formData.rules} onChange={handleInputChange} rows={3}
+                    placeholder="e.g., No smoking, No alcohol, Guests not allowed after 10pm..."
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Timings */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Entry/Exit Timings</label>
+                  <input
+                    type="text" name="timings" value={formData.timings} onChange={handleInputChange}
+                    placeholder="e.g., Entry allowed 6am–10pm, No late night entry"
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Address */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Property Address</h2>
               <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
                 <label className="block text-lg font-bold text-gray-900 mb-3">📌 PIN Code * (6 digits)</label>
-                <input type="text" name="address.pinCode" required maxLength={6} pattern="\d{6}" value={formData.address.pinCode} onChange={handleInputChange} placeholder="e.g., 302020" className="block w-full rounded-lg border-2 border-yellow-500 px-6 py-4 text-2xl font-bold text-center focus:border-blue-500 focus:outline-none" />
+                <input type="text" name="address.pinCode" required maxLength={6} pattern="\d{6}"
+                  value={formData.address.pinCode} onChange={handleInputChange} placeholder="e.g., 302020"
+                  className="block w-full rounded-lg border-2 border-yellow-500 px-6 py-4 text-2xl font-bold text-center focus:border-blue-500 focus:outline-none" />
                 <p className="text-sm text-gray-700 mt-3 font-semibold">⚠️ Buyers/Tenants search by PIN code!</p>
               </div>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700">Street Address *</label>
-                  <input type="text" name="address.street" required value={formData.address.street} onChange={handleInputChange} placeholder="123 Main Street" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  <input type="text" name="address.street" required value={formData.address.street} onChange={handleInputChange}
+                    placeholder="123 Main Street"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">City *</label>
-                  <input type="text" name="address.city" required value={formData.address.city} onChange={handleInputChange} placeholder="Jaipur" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  <input type="text" name="address.city" required value={formData.address.city} onChange={handleInputChange}
+                    placeholder="Jaipur"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">State *</label>
-                  <input type="text" name="address.state" required value={formData.address.state} onChange={handleInputChange} placeholder="Rajasthan" className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
+                  <input type="text" name="address.state" required value={formData.address.state} onChange={handleInputChange}
+                    placeholder="Rajasthan"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none" />
                 </div>
               </div>
             </div>
 
+            {/* Commission Agreement — sell only */}
+            {isSell && (
+              <div className="border-b border-gray-200 pb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">📋 Selling Policy</h2>
+                <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-5 mb-4">
+                  <p className="text-yellow-800 font-bold mb-1">⚠️ Commission Notice</p>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    Upon successful sale of your property through GETROOF, a commission of{' '}
+                    <strong className="text-blue-600">1.49%</strong> of the final sale price will be charged{' '}
+                    <strong>from the seller only</strong>. Buyers are not charged anything.
+                  </p>
+                </div>
+                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-colors ${
+                  commissionAgreed ? 'bg-blue-50 border-blue-400' : 'bg-gray-50 border-gray-300 hover:border-blue-300'
+                }`}>
+                  <input type="checkbox" checked={commissionAgreed} onChange={(e) => setCommissionAgreed(e.target.checked)}
+                    className="mt-0.5 w-5 h-5 accent-blue-600 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">
+                    I understand and agree that <strong>1.49% commission</strong> will be charged from me (the seller) upon successful sale of this property through GETROOF.
+                  </span>
+                </label>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-4">
-              <button type="button" onClick={() => setFormType('choose')} className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button type="submit" disabled={loading || uploadingImages}
-                className={`px-8 py-3 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-lg flex items-center space-x-2 ${isRent ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+              <button type="button" onClick={() => setFormType(backTarget as any)}
+                className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button type="submit"
+                disabled={loading || uploadingImages || (isSell && !commissionAgreed)}
+                className={`px-8 py-3 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed font-medium text-lg flex items-center space-x-2 ${submitBtnClass}`}>
                 {loading ? (
                   <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div><span>Uploading...</span></>
                 ) : (
-                  <><Upload className="w-5 h-5" /><span>{isRent ? 'List for Rent (Free)' : 'Upload Property (Free)'}</span></>
+                  <><Upload className="w-5 h-5" /><span>Upload Property (Free)</span></>
                 )}
               </button>
             </div>
