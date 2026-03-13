@@ -16,7 +16,7 @@ const cashfreeHeaders = {
   'Content-Type': 'application/json',
 };
 
-// @desc    Create Cashfree QR code for commission payment
+// @desc    Create Cashfree payment link for commission payment
 // @route   POST /api/v1/payments/create-qr
 // @access  Private (Broker)
 export const createPaymentQR = async (req: any, res: Response) => {
@@ -37,9 +37,9 @@ export const createPaymentQR = async (req: any, res: Response) => {
     const brokerShare = Math.round(totalCommission * 0.70);
     const platformShare = Math.round(totalCommission * 0.30);
 
-    // Create Cashfree order
     const orderId = `order_${Date.now()}_${broker._id.toString().slice(-6)}`;
 
+    // Create Cashfree order — returns a hosted payment link (no QR API needed)
     const orderResponse = await axios.post(
       `${CASHFREE_BASE_URL}/orders`,
       {
@@ -54,22 +54,16 @@ export const createPaymentQR = async (req: any, res: Response) => {
         },
         order_meta: {
           return_url: `${process.env.FRONTEND_URL}/broker/payment-history`,
+          notify_url: `${process.env.BACKEND_URL}/api/v1/payments/webhook`,
         },
-        order_note: `Commission for property sale of ₹${saleAmount}`,
+        order_note: `GETROOF commission for property sale of Rs.${saleAmount}`,
       },
       { headers: cashfreeHeaders }
     );
 
     const cfOrderId = orderResponse.data.order_id;
-
-    // Generate QR code for this order
-    const qrResponse = await axios.post(
-      `${CASHFREE_BASE_URL}/orders/${cfOrderId}/payments/qrcode`,
-      {},
-      { headers: cashfreeHeaders }
-    );
-
-    const qrCodeUrl = qrResponse.data.link_url || qrResponse.data.payload;
+    // Cashfree returns payment_link on every order — frontend will convert this to a QR image
+    const paymentLink = orderResponse.data.payment_link;
 
     // Save payment record
     const payment = await Payment.create({
@@ -89,7 +83,8 @@ export const createPaymentQR = async (req: any, res: Response) => {
     res.status(201).json({
       success: true,
       data: {
-        qrCode: qrCodeUrl,
+        qrCode: null,
+        paymentLink,
         totalCommission,
         brokerShare,
         platformShare,
@@ -99,8 +94,11 @@ export const createPaymentQR = async (req: any, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('❌ Create QR error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, message: error.response?.data?.message || error.message });
+    console.error('❌ Create payment error:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: error.response?.data?.message || error.message,
+    });
   }
 };
 

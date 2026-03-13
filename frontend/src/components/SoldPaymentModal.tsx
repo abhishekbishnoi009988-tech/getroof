@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import API from '../services/api';
 import toast from 'react-hot-toast';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface SoldPaymentModalProps {
   notification: {
@@ -22,7 +23,7 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
   const [step, setStep] = useState<'input' | 'qr'>('input');
   const [loading, setLoading] = useState(false);
   const [qrData, setQrData] = useState<{
-    qrCode: string;
+    paymentLink: string;
     totalCommission: number;
     brokerShare: number;
     platformShare: number;
@@ -31,7 +32,6 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
   } | null>(null);
   const [checkingPayment, setCheckingPayment] = useState(false);
 
-  // Updated: 1.49% commission, 70% broker / 30% platform
   const commission = saleAmount ? Math.round((parseFloat(saleAmount) * 1.49) / 100) : 0;
   const brokerShare = Math.round(commission * 0.70);
   const platformShare = Math.round(commission * 0.30);
@@ -103,24 +103,16 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Property Type</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setPropertyType('residential')}
+                  <button onClick={() => setPropertyType('residential')}
                     className={`p-3 rounded-xl border-2 font-medium transition-all ${
-                      propertyType === 'residential'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-200 text-gray-600'
-                    }`}
-                  >
+                      propertyType === 'residential' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600'
+                    }`}>
                     🏠 Residential
                   </button>
-                  <button
-                    onClick={() => setPropertyType('commercial')}
+                  <button onClick={() => setPropertyType('commercial')}
                     className={`p-3 rounded-xl border-2 font-medium transition-all ${
-                      propertyType === 'commercial'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-200 text-gray-600'
-                    }`}
-                  >
+                      propertyType === 'commercial' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600'
+                    }`}>
                     🏢 Commercial
                   </button>
                 </div>
@@ -128,12 +120,9 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
 
               {/* Sale Amount */}
               <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Property Sale Amount (₹)
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Property Sale Amount (₹)</label>
                 <input
-                  type="number"
-                  value={saleAmount}
+                  type="number" value={saleAmount}
                   onChange={(e) => setSaleAmount(e.target.value)}
                   placeholder="e.g. 5000000"
                   className="w-full border-2 border-gray-200 rounded-xl p-3 text-lg focus:border-green-500 outline-none"
@@ -167,17 +156,14 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
                 </div>
               )}
 
-              {/* Info */}
               <div className="bg-blue-50 rounded-xl p-3 mb-4 text-sm text-blue-700">
                 📱 A QR code will be generated for <strong>{formatPrice(commission)}</strong>.
-                Show it to the seller to scan and pay via UPI/Card.
+                Show it to the seller to scan and pay via any UPI app.
               </div>
 
-              <button
-                onClick={handleGenerateQR}
+              <button onClick={handleGenerateQR}
                 disabled={loading || !saleAmount || parseFloat(saleAmount) <= 0}
-                className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? '⏳ Generating QR...' : `Generate Payment QR (${formatPrice(commission)})`}
               </button>
             </>
@@ -191,18 +177,24 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
                 <p className="text-sm text-gray-500 mt-1">Ask seller to scan and pay</p>
               </div>
 
-              {/* QR Code */}
-              <div className="border-4 border-green-500 rounded-2xl p-4 mb-4 inline-block">
-                <img
-                  src={qrData.qrCode}
-                  alt="Payment QR Code"
-                  className="w-56 h-56 mx-auto"
+              {/* QR Code — generated on frontend from payment link */}
+              <div className="border-4 border-green-500 rounded-2xl p-4 mb-3 inline-block bg-white">
+                <QRCodeSVG
+                  value={qrData.paymentLink}
+                  size={220}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                  level="H"
                 />
               </div>
 
-              <p className="text-sm text-gray-600 mb-4">
-                Seller can pay via any UPI app — PhonePe, GPay, Paytm etc.
-              </p>
+              <p className="text-xs text-gray-500 mb-1">Scan with any UPI app</p>
+              <div className="flex justify-center gap-2 mb-4">
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">📱 PhonePe</span>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">🟢 GPay</span>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">💙 Paytm</span>
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">🔵 BHIM</span>
+              </div>
 
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -215,18 +207,13 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
                 </div>
               </div>
 
-              <button
-                onClick={handleCheckPayment}
-                disabled={checkingPayment}
-                className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 mb-3"
-              >
+              <button onClick={handleCheckPayment} disabled={checkingPayment}
+                className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 mb-3">
                 {checkingPayment ? '⏳ Checking...' : '✅ Payment Done? Verify Now'}
               </button>
 
-              <button
-                onClick={() => setStep('input')}
-                className="w-full border border-gray-300 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50"
-              >
+              <button onClick={() => setStep('input')}
+                className="w-full border border-gray-300 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">
                 ← Back
               </button>
             </div>
