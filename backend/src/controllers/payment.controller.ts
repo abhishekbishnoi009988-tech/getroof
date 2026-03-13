@@ -54,7 +54,6 @@ export const createPaymentQR = async (req: any, res: Response) => {
         },
         order_meta: {
           return_url: `${process.env.FRONTEND_URL}/broker/payment-history`,
-          notify_url: `${process.env.BACKEND_URL}/api/v1/payments/webhook`,
         },
         order_note: `GETROOF commission for property sale of Rs.${saleAmount}`,
       },
