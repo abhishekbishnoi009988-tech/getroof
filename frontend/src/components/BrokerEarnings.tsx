@@ -27,7 +27,7 @@ const BrokerEarnings: React.FC = () => {
       <p className="text-4xl font-bold mb-4">₹{earnings.toLocaleString()}</p>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm opacity-90">45% commission from sales</p>
+          <p className="text-sm opacity-90">70% commission from sales</p>
           {pendingPayments > 0 && (
             <p className="text-xs opacity-75 mt-1">{pendingPayments} pending payments</p>
           )}

@@ -10,16 +10,17 @@ const TermsAndConditions: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-sm p-8 md:p-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Terms and Conditions</h1>
-          <p className="text-gray-600 mb-8">Last Updated: March 8, 2026</p>
+          <p className="text-gray-600 mb-8">Last Updated: March 14, 2026</p>
 
           <div className="prose prose-blue max-w-none space-y-6">
+
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
               <p className="text-gray-700">
-                Welcome to GETROOF ("Platform," "we," "us," or "our"). These Terms and Conditions ("Terms") govern your access to and use of the GETROOF platform, including our website and mobile applications. By accessing or using GETROOF, you agree to be bound by these Terms.
+                Welcome to GETROOF ("Platform," "we," "us," or "our"). These Terms and Conditions ("Terms") govern your access to and use of the GETROOF platform, including our website at getroof.in and any associated mobile applications. By accessing or using GETROOF, you agree to be bound by these Terms.
               </p>
               <p className="text-gray-700 mt-3">
-                GETROOF is a real estate marketplace platform that connects property owners, buyers, and registered brokers for property transactions within India.
+                GETROOF is an online real estate marketplace platform that connects property owners, buyers, and registered brokers for property transactions within India. GETROOF is operated as a sole proprietorship by Abhishek Bishnoi, based at 145A Mahadev Nagar, Banar, Jodhpur, Rajasthan – 342027.
               </p>
             </section>
 
@@ -32,6 +33,7 @@ const TermsAndConditions: React.FC = () => {
                 <li><strong>"Broker"</strong> means a verified User registered to facilitate property transactions</li>
                 <li><strong>"Property Listing"</strong> means information about a property posted on the Platform</li>
                 <li><strong>"Commission"</strong> means the fee charged from the Seller upon successful property sale, used to pay Brokers and the Platform</li>
+                <li><strong>"Platform"</strong> means the GETROOF website at getroof.in and associated services</li>
               </ul>
             </section>
 
@@ -44,8 +46,9 @@ const TermsAndConditions: React.FC = () => {
                 <li>Email and password</li>
                 <li>Google OAuth authentication</li>
               </ul>
+              <p className="text-gray-700">You must be at least 18 years of age to create an account and use the Platform.</p>
 
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">3.2 Account Responsibilities</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">3.2 Account Responsibilities</h3>
               <p className="text-gray-700">You agree to:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 <li>Provide accurate, current, and complete information</li>
@@ -100,7 +103,7 @@ const TermsAndConditions: React.FC = () => {
                 <li>Years of experience in real estate</li>
                 <li>Area of specialization</li>
                 <li>Office location with GPS coordinates</li>
-                <li>Service radius (1-50 km)</li>
+                <li>Service radius (1–50 km)</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">5.2 Broker Verification</h3>
@@ -120,7 +123,7 @@ const TermsAndConditions: React.FC = () => {
                 <li><strong>GETROOF receives: 30%</strong> as platform fee</li>
               </ul>
               <p className="text-gray-700 mt-3">
-                Commission is charged from the seller only — buyers are not charged any commission. Payments are processed within 2-3 business days after payment verification.
+                Commission payments are processed via UPI. Broker's share is credited within 2–3 business days after payment verification.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">5.4 Broker Responsibilities</h3>
@@ -139,16 +142,16 @@ const TermsAndConditions: React.FC = () => {
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2">6.1 Payment Processing</h3>
               <p className="text-gray-700">
-                All payments are processed through Cashfree, our third-party payment gateway. By making payments, you agree to Cashfree's terms and conditions.
+                Commission payments are processed through UPI and Cashfree Payments, our third-party payment gateway. By making payments, you agree to Cashfree's terms and conditions available at cashfree.com.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.2 Payment Methods</h3>
               <p className="text-gray-700 mb-2">Accepted payment methods include:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
-                <li>UPI (Google Pay, PhonePe, Paytm, etc.)</li>
+                <li>UPI (Google Pay, PhonePe, Paytm, BHIM, etc.)</li>
                 <li>Credit/Debit Cards</li>
                 <li>Net Banking</li>
-                <li>Wallet</li>
+                <li>Mobile Wallets</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.3 Commission Payment Flow</h3>
@@ -156,15 +159,24 @@ const TermsAndConditions: React.FC = () => {
               <ol className="list-decimal list-inside space-y-1 text-gray-700">
                 <li>Broker marks property as sold and enters the sale price</li>
                 <li>System calculates 1.49% commission on the sale price</li>
-                <li>A QR code is generated for the seller to pay the commission</li>
+                <li>A UPI QR code is generated for the seller to pay the commission amount</li>
+                <li>Seller scans the QR and pays via any UPI app — amount is pre-filled</li>
                 <li>Commission split is calculated (70% Broker, 30% Platform)</li>
-                <li>Broker's share is credited within 2-3 business days</li>
+                <li>Broker's share is credited within 2–3 business days</li>
               </ol>
 
-              <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.4 Refunds</h3>
-              <p className="text-gray-700">
-                Refunds are processed on a case-by-case basis. Please refer to our Refund Policy for detailed information.
-              </p>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">6.4 Refund Policy</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-gray-700 mb-2"><strong>Commission Refunds:</strong></p>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
+                  <li>Refund requests must be submitted within 7 days of payment at support.getroof@gmail.com</li>
+                  <li>Refunds are applicable only if the property sale did not occur due to a platform error</li>
+                  <li>If a verified transaction is found erroneous, a full refund will be processed within 7–10 business days</li>
+                  <li>No refund will be issued once the broker's share has been disbursed</li>
+                  <li>Refunds due to buyer/seller disputes are not covered by GETROOF</li>
+                  <li>All refund decisions by GETROOF are final</li>
+                </ul>
+              </div>
             </section>
 
             <section>
@@ -179,6 +191,7 @@ const TermsAndConditions: React.FC = () => {
                 <li>Interfere with Platform operations or security</li>
                 <li>Create multiple accounts to manipulate the system</li>
                 <li>Share login credentials with others</li>
+                <li>Misrepresent property ownership or legal status</li>
               </ul>
             </section>
 
@@ -219,7 +232,8 @@ const TermsAndConditions: React.FC = () => {
                 <li>Fraudulent listings or transactions</li>
                 <li>Loss of profits, data, or business opportunities</li>
                 <li>Indirect, incidental, or consequential damages</li>
-                <li>Issues arising from third-party services (Cashfree, Google)</li>
+                <li>Issues arising from third-party services (Cashfree, Google, Cloudinary)</li>
+                <li>Service interruptions or downtime</li>
               </ul>
               <p className="text-gray-700 mt-3">
                 Our total liability for any claim shall not exceed the amount of commission fees paid by you in the 6 months prior to the claim.
@@ -242,12 +256,12 @@ const TermsAndConditions: React.FC = () => {
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2">12.1 Governing Law</h3>
               <p className="text-gray-700">
-                These Terms shall be governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Jaipur, Rajasthan, India.
+                These Terms shall be governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Jodhpur, Rajasthan, India.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">12.2 Arbitration</h3>
               <p className="text-gray-700">
-                Any dispute arising from these Terms shall first be attempted to be resolved through good-faith negotiations. If unresolved, disputes may be submitted to arbitration under the Indian Arbitration and Conciliation Act, 1996.
+                Any dispute arising from these Terms shall first be attempted to be resolved through good-faith negotiations. If unresolved within 30 days, disputes may be submitted to arbitration under the Indian Arbitration and Conciliation Act, 1996.
               </p>
             </section>
 
@@ -262,10 +276,13 @@ const TermsAndConditions: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">14. Contact Information</h2>
               <p className="text-gray-700">For questions about these Terms, please contact us at:</p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
-                <p className="text-gray-800"><strong>GETROOF</strong></p>
-                <p className="text-gray-700">Email: legal.getroof@gmail.com</p>
+                <p className="text-gray-800 font-bold text-lg">GETROOF</p>
+                <p className="text-gray-700 mt-1">145A Mahadev Nagar, Banar</p>
+                <p className="text-gray-700">Jodhpur, Rajasthan – 342027</p>
+                <p className="text-gray-700 mt-2">Email: legal.getroof@gmail.com</p>
                 <p className="text-gray-700">Support: support.getroof@gmail.com</p>
                 <p className="text-gray-700">Phone: +91-7297018503</p>
+                <p className="text-gray-700">Website: https://getroof.in</p>
               </div>
             </section>
 
@@ -275,9 +292,11 @@ const TermsAndConditions: React.FC = () => {
                 By using GETROOF, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
               </p>
             </section>
+
           </div>
 
           <div className="mt-12 pt-8 border-t">
+            <p className="text-sm text-gray-500 mb-4">© 2026 GETROOF. All rights reserved.</p>
             <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

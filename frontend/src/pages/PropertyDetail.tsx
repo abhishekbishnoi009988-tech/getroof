@@ -24,12 +24,22 @@ const PropertyDetail: React.FC = () => {
   const [buyerMessage, setBuyerMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Whether this property was uploaded by a broker (skip broker selection)
+  const [uploadedByBroker, setUploadedByBroker] = useState(false);
+
   useEffect(() => { fetchProperty(); }, [id]);
 
   const fetchProperty = async () => {
     try {
       const response = await API.get(`/properties/${id}`);
-      setProperty(response.data.data);
+      const prop = response.data.data;
+      setProperty(prop);
+
+      // Check if property has an associated broker (uploaded by broker)
+      if (prop.broker) {
+        setUploadedByBroker(true);
+        setSelectedBroker(prop.broker);
+      }
     } catch (error) {
       toast.error('Property not found');
       navigate('/');
@@ -38,8 +48,14 @@ const PropertyDetail: React.FC = () => {
     }
   };
 
-  // Directly load brokers — no popup
   const handleContactBrokerClick = async () => {
+    // If property was uploaded by a broker — skip broker list, go straight to contact form
+    if (uploadedByBroker && selectedBroker) {
+      setModalStep('contact-form');
+      return;
+    }
+
+    // Otherwise show broker list as normal
     setBrokersLoading(true);
     setModalStep('broker-list');
     try {
@@ -77,8 +93,8 @@ const PropertyDetail: React.FC = () => {
       if (response.data.success) {
         toast.success(response.data.message || 'Your details have been sent to the broker!');
         setBuyerPhone(''); setBuyerName(''); setBuyerMessage('');
-        setSelectedBroker(null);
         setModalStep(null);
+        if (!uploadedByBroker) setSelectedBroker(null);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send your details. Please try again.');
@@ -89,7 +105,7 @@ const PropertyDetail: React.FC = () => {
 
   const handleCloseModal = () => {
     setModalStep(null);
-    setSelectedBroker(null);
+    if (!uploadedByBroker) setSelectedBroker(null);
     setBuyerPhone('');
     setBuyerName('');
     setBuyerMessage('');
@@ -188,7 +204,7 @@ const PropertyDetail: React.FC = () => {
           </div>
 
           {/* Badges */}
-          <div className="mb-8 flex space-x-4">
+          <div className="mb-8 flex flex-wrap gap-4">
             <div className="bg-blue-50 px-4 py-2 rounded-lg">
               <span className="text-sm text-gray-600">Property Type: </span>
               <span className="font-semibold text-blue-600">{property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}</span>
@@ -197,6 +213,12 @@ const PropertyDetail: React.FC = () => {
               <span className="text-sm text-gray-600">Listing Type: </span>
               <span className="font-semibold text-green-600">For {isRent ? 'Rent' : 'Sale'}</span>
             </div>
+            {uploadedByBroker && (
+              <div className="bg-purple-50 px-4 py-2 rounded-lg">
+                <span className="text-sm text-gray-600">Listed by: </span>
+                <span className="font-semibold text-purple-600">✓ Verified Broker</span>
+              </div>
+            )}
           </div>
 
           {/* Contact Section */}
@@ -216,7 +238,6 @@ const PropertyDetail: React.FC = () => {
             </div>
           ) : (
             <div>
-              {/* CHANGE 1: Simple inline notice replacing the popup */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm text-blue-800">
                   ℹ️ <strong>Buyers are not charged anything.</strong> Only the seller pays a <strong>1.49% commission</strong> upon successful sale of the property.
@@ -232,7 +253,7 @@ const PropertyDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* STEP 1 - Broker List Modal */}
+      {/* STEP 1 - Broker List Modal (only shown when NOT uploaded by broker) */}
       {modalStep === 'broker-list' && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
@@ -296,18 +317,29 @@ const PropertyDetail: React.FC = () => {
               <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
             </div>
 
+            {/* Show broker info — no "Change" button if uploaded by broker */}
             {selectedBroker && (
               <div className="flex items-center space-x-3 bg-blue-50 rounded-lg p-3 mb-5">
                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold">
-                    {selectedBroker.user?.name?.charAt(0)?.toUpperCase() || 'B'}
-                  </span>
+                  {selectedBroker.user?.profilePicture ? (
+                    <img src={selectedBroker.user.profilePicture} alt={selectedBroker.user?.name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <span className="text-white font-bold">
+                      {selectedBroker.user?.name?.charAt(0)?.toUpperCase() || 'B'}
+                    </span>
+                  )}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">{selectedBroker.user?.name}</p>
+                  <p className="font-semibold text-gray-900 text-sm">{selectedBroker.user?.name || 'Broker'}</p>
                   <p className="text-xs text-blue-600">{selectedBroker.specialization}</p>
+                  {uploadedByBroker && (
+                    <span className="text-xs text-purple-600 font-medium">Listed by this broker</span>
+                  )}
                 </div>
-                <button onClick={() => setModalStep('broker-list')} className="ml-auto text-xs text-blue-600 underline">Change</button>
+                {/* Only show "Change" if NOT uploaded by broker */}
+                {!uploadedByBroker && (
+                  <button onClick={() => setModalStep('broker-list')} className="ml-auto text-xs text-blue-600 underline">Change</button>
+                )}
               </div>
             )}
 
@@ -333,10 +365,12 @@ const PropertyDetail: React.FC = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="flex space-x-3 pt-2">
-                <button type="button" onClick={() => setModalStep('broker-list')} disabled={submitting}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-300 disabled:opacity-50">
-                  Back
-                </button>
+                {!uploadedByBroker && (
+                  <button type="button" onClick={() => setModalStep('broker-list')} disabled={submitting}
+                    className="flex-1 bg-gray-200 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+                    Back
+                  </button>
+                )}
                 <button type="submit" disabled={submitting}
                   className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
                   {submitting ? (

@@ -3,6 +3,8 @@ import API from '../services/api';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
 
+const GETROOF_UPI_ID = '7297018503@ybl';
+
 interface SoldPaymentModalProps {
   notification: {
     _id: string;
@@ -22,13 +24,13 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
   const [propertyType, setPropertyType] = useState<'residential' | 'commercial'>('residential');
   const [step, setStep] = useState<'input' | 'qr'>('input');
   const [loading, setLoading] = useState(false);
-  const [qrData, setQrData] = useState<{
-    paymentLink: string;
+  const [paymentData, setPaymentData] = useState<{
     totalCommission: number;
     brokerShare: number;
     platformShare: number;
     paymentId: string;
     cfOrderId: string;
+    upiString: string;
   } | null>(null);
   const [checkingPayment, setCheckingPayment] = useState(false);
 
@@ -52,7 +54,13 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
         notificationId: notification._id,
         propertyId: notification.property._id,
       });
-      setQrData(response.data.data);
+
+      const data = response.data.data;
+
+      // UPI string with pre-filled amount — seller just scans and confirms, no typing needed
+      const upiString = `upi://pay?pa=${GETROOF_UPI_ID}&pn=GETROOF&am=${data.totalCommission}&cu=INR&tn=Commission for property sale`;
+
+      setPaymentData({ ...data, upiString });
       setStep('qr');
       toast.success('QR Code generated! Show to seller to scan and pay.');
     } catch (error: any) {
@@ -63,12 +71,12 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
   };
 
   const handleCheckPayment = async () => {
-    if (!qrData) return;
+    if (!paymentData) return;
     setCheckingPayment(true);
     try {
       const response = await API.post('/payments/check-qr-payment', {
-        paymentId: qrData.paymentId,
-        cfOrderId: qrData.cfOrderId,
+        paymentId: paymentData.paymentId,
+        cfOrderId: paymentData.cfOrderId,
       });
       if (response.data.data.paid) {
         toast.success('Payment received! Property marked as sold. 🎉');
@@ -157,8 +165,8 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
               )}
 
               <div className="bg-blue-50 rounded-xl p-3 mb-4 text-sm text-blue-700">
-                📱 A QR code will be generated for <strong>{formatPrice(commission)}</strong>.
-                Show it to the seller to scan and pay via any UPI app.
+                📱 A UPI QR will be generated for <strong>{formatPrice(commission)}</strong>.
+                Seller scans it — amount is pre-filled, they just confirm and pay.
               </div>
 
               <button onClick={handleGenerateQR}
@@ -169,26 +177,26 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
             </>
           )}
 
-          {step === 'qr' && qrData && (
+          {step === 'qr' && paymentData && (
             <div className="text-center">
               <div className="bg-green-50 rounded-xl p-4 mb-4">
                 <p className="text-green-800 font-semibold mb-1">Commission Amount</p>
-                <p className="text-3xl font-bold text-green-600">{formatPrice(qrData.totalCommission)}</p>
-                <p className="text-sm text-gray-500 mt-1">Ask seller to scan and pay</p>
+                <p className="text-3xl font-bold text-green-600">{formatPrice(paymentData.totalCommission)}</p>
+                <p className="text-sm text-gray-500 mt-1">Amount is pre-filled — seller just scans & confirms</p>
               </div>
 
-              {/* QR Code — generated on frontend from payment link */}
+              {/* UPI QR — amount locked in, no manual entry needed */}
               <div className="border-4 border-green-500 rounded-2xl p-4 mb-3 inline-block bg-white">
                 <QRCodeSVG
-                  value={qrData.paymentLink}
+                  value={paymentData.upiString}
                   size={220}
                   bgColor="#ffffff"
                   fgColor="#000000"
-                  level="H"
+                  level="M"
                 />
               </div>
 
-              <p className="text-xs text-gray-500 mb-1">Scan with any UPI app</p>
+              <p className="text-xs font-semibold text-green-700 mb-1">✅ Scan with any UPI app — amount pre-filled</p>
               <div className="flex justify-center gap-2 mb-4">
                 <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">📱 PhonePe</span>
                 <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">🟢 GPay</span>
@@ -199,11 +207,11 @@ const SoldPaymentModal: React.FC<SoldPaymentModalProps> = ({ notification, onClo
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-gray-500">Your Earnings (70%)</p>
-                  <p className="font-bold text-green-600">{formatPrice(qrData.brokerShare)}</p>
+                  <p className="font-bold text-green-600">{formatPrice(paymentData.brokerShare)}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
                   <p className="text-xs text-gray-500">Platform Fee (30%)</p>
-                  <p className="font-bold text-blue-600">{formatPrice(qrData.platformShare)}</p>
+                  <p className="font-bold text-blue-600">{formatPrice(paymentData.platformShare)}</p>
                 </div>
               </div>
 

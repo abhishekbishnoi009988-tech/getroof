@@ -10,16 +10,20 @@ const PrivacyPolicy: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-sm p-8 md:p-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-          <p className="text-gray-600 mb-8">Last Updated: March 8, 2026</p>
+          <p className="text-gray-600 mb-8">Last Updated: March 14, 2026</p>
 
           <div className="prose prose-blue max-w-none space-y-6">
+
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
               <p className="text-gray-700">
-                GETROOF ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our platform.
+                GETROOF ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our platform at getroof.in.
               </p>
               <p className="text-gray-700 mt-3">
-                This policy complies with the Information Technology Act, 2000, IT Rules 2011, and the Digital Personal Data Protection Act, 2023 (DPDP Act).
+                GETROOF is operated as a sole proprietorship by Abhishek Bishnoi, based at 145A Mahadev Nagar, Banar, Jodhpur, Rajasthan – 342027.
+              </p>
+              <p className="text-gray-700 mt-3">
+                This policy complies with the Information Technology Act, 2000, IT (Amendment) Act 2008, IT Rules 2011, and the Digital Personal Data Protection Act, 2023 (DPDP Act).
               </p>
             </section>
 
@@ -41,7 +45,7 @@ const PrivacyPolicy: React.FC = () => {
                 <li>Property address and location</li>
                 <li>Property images (up to 5 photos) and video tour (optional)</li>
                 <li>PIN code and locality information</li>
-                <li>Owner mobile number (shared only with broker, never shown publicly)</li>
+                <li>Owner mobile number (shared only with assigned broker, never shown publicly)</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">2.3 Broker Information</h3>
@@ -51,14 +55,14 @@ const PrivacyPolicy: React.FC = () => {
                 <li>Years of experience and specialization</li>
                 <li>Office location and GPS coordinates</li>
                 <li>Service radius (area coverage)</li>
-                <li>Bank account details (for commission payments)</li>
+                <li>Bank account / UPI details (for commission payments)</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">2.4 Transaction Information</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 <li>Payment details (processed by Cashfree)</li>
                 <li>Commission payment records (1.49% charged from seller only)</li>
-                <li>Transaction history</li>
+                <li>Transaction history and order IDs</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">2.5 Automatically Collected Information</h3>
@@ -77,7 +81,7 @@ const PrivacyPolicy: React.FC = () => {
               <h3 className="text-xl font-semibold text-gray-800 mb-2">3.1 Provide Platform Services</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
                 <li>Create and manage your account</li>
-                <li>Display property listings</li>
+                <li>Display property listings to potential buyers</li>
                 <li>Connect buyers with brokers based on location</li>
                 <li>Process commission payments (1.49% from seller only)</li>
                 <li>Send notifications about buyer interests</li>
@@ -110,22 +114,22 @@ const PrivacyPolicy: React.FC = () => {
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">4.2 With Brokers</h3>
               <p className="text-gray-700">
-                When a buyer expresses interest in a property, we share the buyer's name and phone number with the selected broker. The seller's phone number is also shared with the broker (not with buyers) so the broker can facilitate the deal between both parties.
+                When a buyer expresses interest in a property, we share the buyer's name and phone number with the assigned broker. The seller's phone number is also shared with the broker (not with buyers) so the broker can facilitate the deal between both parties.
               </p>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">4.3 Third-Party Services</h3>
-              <p className="text-gray-700 mb-3">We share data with:</p>
+              <p className="text-gray-700 mb-3">We share data with the following trusted service providers:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
-                <li><strong>Cashfree:</strong> Payment processing (transaction details, bank information)</li>
+                <li><strong>Cashfree Payments:</strong> Payment processing (transaction details, UPI information)</li>
                 <li><strong>Google:</strong> OAuth authentication (email, name, profile picture)</li>
                 <li><strong>MongoDB Atlas:</strong> Database hosting (encrypted data storage)</li>
-                <li><strong>Netlify/Render:</strong> Platform hosting</li>
+                <li><strong>Netlify / Render:</strong> Platform hosting and deployment</li>
                 <li><strong>Cloudinary:</strong> Property image and video storage</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">4.4 Legal Requirements</h3>
               <p className="text-gray-700">
-                We may disclose your information if required by law, court order, or government authority.
+                We may disclose your information if required by law, court order, government authority, or to protect the rights and safety of GETROOF and its users.
               </p>
             </section>
 
@@ -136,6 +140,7 @@ const PrivacyPolicy: React.FC = () => {
                   GETROOF charges a commission of <strong>1.49% of the sale price</strong> upon successful property sale.
                   This commission is charged <strong>from the seller only</strong>. Buyers are not charged any commission.
                   The commission is split as: <strong>70% to the Broker</strong> and <strong>30% to GETROOF</strong> as platform fee.
+                  All payment data is handled securely by Cashfree Payments and is not stored on GETROOF servers.
                 </p>
               </div>
             </section>
@@ -144,15 +149,15 @@ const PrivacyPolicy: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Data Security</h2>
               <p className="text-gray-700 mb-3">We implement industry-standard security measures:</p>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
-                <li><strong>Encryption:</strong> HTTPS/SSL encryption for data transmission</li>
+                <li><strong>Encryption:</strong> HTTPS/SSL encryption for all data transmission</li>
                 <li><strong>Password Security:</strong> Bcrypt hashing for password storage</li>
                 <li><strong>Access Control:</strong> Role-based access (User, Broker, Admin)</li>
-                <li><strong>Authentication:</strong> JWT tokens for session management</li>
-                <li><strong>Payment Security:</strong> PCI DSS compliant (via Cashfree)</li>
-                <li><strong>Phone Privacy:</strong> Seller phone numbers are only shared with brokers, never shown publicly</li>
+                <li><strong>Authentication:</strong> JWT tokens for secure session management</li>
+                <li><strong>Payment Security:</strong> PCI DSS compliant via Cashfree</li>
+                <li><strong>Phone Privacy:</strong> Seller phone numbers are only shared with assigned brokers, never shown publicly</li>
               </ul>
               <p className="text-gray-700 mt-3">
-                However, no system is 100% secure. We cannot guarantee absolute security of your data.
+                However, no system is 100% secure. We cannot guarantee absolute security of your data and are not liable for any unauthorized access beyond our reasonable control.
               </p>
             </section>
 
@@ -168,7 +173,7 @@ const PrivacyPolicy: React.FC = () => {
 
               <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-3">7.2 Managing Cookies</h3>
               <p className="text-gray-700">
-                You can disable cookies in your browser settings. However, some platform features may not work properly.
+                You can disable cookies in your browser settings. However, some platform features may not work properly without essential cookies.
               </p>
             </section>
 
@@ -185,7 +190,7 @@ const PrivacyPolicy: React.FC = () => {
               </ul>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
                 <p className="text-sm text-gray-800">
-                  To exercise these rights, contact us at <strong>privacy.getroof@gmail.com</strong>
+                  To exercise these rights, contact us at <strong>privacy.getroof@gmail.com</strong>. We will respond within 30 days.
                 </p>
               </div>
             </section>
@@ -204,14 +209,14 @@ const PrivacyPolicy: React.FC = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Children's Privacy</h2>
               <p className="text-gray-700">
-                GETROOF is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we discover that a minor has provided personal information, we will delete it immediately.
+                GETROOF is not intended for users under 18 years of age. We do not knowingly collect personal information from minors. If we discover that a minor has provided personal information, we will delete it immediately. Parents or guardians who believe their child has provided information may contact us at support.getroof@gmail.com.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Changes to This Privacy Policy</h2>
               <p className="text-gray-700">
-                We may update this Privacy Policy from time to time. We will notify you of material changes via email or platform notification. Your continued use after changes constitutes acceptance of the updated policy.
+                We may update this Privacy Policy from time to time. We will notify you of material changes via email or platform notification. The "Last Updated" date at the top will reflect the most recent revision. Your continued use after changes constitutes acceptance of the updated policy.
               </p>
             </section>
 
@@ -219,11 +224,13 @@ const PrivacyPolicy: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Contact Us</h2>
               <p className="text-gray-700 mb-3">For privacy-related questions, concerns, or to exercise your data rights:</p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-gray-800"><strong>Data Protection Officer</strong></p>
-                <p className="text-gray-700">GETROOF</p>
-                <p className="text-gray-700">Email: privacy.getroof@gmail.com</p>
+                <p className="text-gray-800 font-bold text-lg">GETROOF</p>
+                <p className="text-gray-700 mt-1">145A Mahadev Nagar, Banar</p>
+                <p className="text-gray-700">Jodhpur, Rajasthan – 342027</p>
+                <p className="text-gray-700 mt-2">Email: privacy.getroof@gmail.com</p>
                 <p className="text-gray-700">Support: support.getroof@gmail.com</p>
                 <p className="text-gray-700">Phone: +91-7297018503</p>
+                <p className="text-gray-700">Website: https://getroof.in</p>
               </div>
             </section>
 
@@ -234,8 +241,10 @@ const PrivacyPolicy: React.FC = () => {
               </p>
               <div className="bg-white border border-gray-200 rounded p-4">
                 <p className="text-gray-800"><strong>Grievance Officer</strong></p>
-                <p className="text-gray-700">Name: Abhishek</p>
+                <p className="text-gray-700">Name: Abhishek Bishnoi</p>
+                <p className="text-gray-700">Address: 145A Mahadev Nagar, Banar, Jodhpur, Rajasthan – 342027</p>
                 <p className="text-gray-700">Email: grievance.getroof@gmail.com</p>
+                <p className="text-gray-700">Phone: +91-7297018503</p>
                 <p className="text-gray-700">Response Time: Within 30 days</p>
               </div>
             </section>
@@ -246,9 +255,11 @@ const PrivacyPolicy: React.FC = () => {
                 By using GETROOF, you consent to the collection, use, and sharing of your information as described in this Privacy Policy.
               </p>
             </section>
+
           </div>
 
           <div className="mt-12 pt-8 border-t">
+            <p className="text-sm text-gray-500 mb-4">© 2026 GETROOF. All rights reserved.</p>
             <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
