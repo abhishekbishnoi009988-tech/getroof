@@ -28,10 +28,27 @@ interface Withdrawal {
   createdAt: string;
 }
 
+interface PropertyListing {
+  _id: string;
+  title: string;
+  description: string;
+  price: number;
+  address: { street: string; city: string; state: string; pinCode: string };
+  images: string[];
+  propertyType: string;
+  listingType: string;
+  area: number;
+  bedrooms?: number;
+  status: string;
+  moderationStatus: 'pending' | 'approved' | 'rejected';
+  seller: { name: string; email: string };
+  createdAt: string;
+}
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<'brokers' | 'withdrawals'>('brokers');
-  
+  const [activeSection, setActiveSection] = useState<'brokers' | 'withdrawals' | 'properties'>('properties');
+
   // Broker state
   const [brokers, setBrokers] = useState<BrokerApplication[]>([]);
   const [loadingBrokers, setLoadingBrokers] = useState(true);
@@ -45,11 +62,15 @@ const AdminDashboard: React.FC = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [adminNote, setAdminNote] = useState<{ [key: string]: string }>({});
 
-  useEffect(() => {
-    checkAdminAuth();
-    fetchBrokers();
-    fetchWithdrawals();
-  }, [filter]);
+  // Property moderation state
+  const [properties, setProperties] = useState<PropertyListing[]>([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
+  const [pFilter, setPFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+
+  useEffect(() => { checkAdminAuth(); }, []);
+  useEffect(() => { fetchBrokers(); }, [filter]);
+  useEffect(() => { fetchWithdrawals(); }, []);
+  useEffect(() => { fetchProperties(); }, [pFilter]);
 
   const checkAdminAuth = async () => {
     try {
@@ -78,6 +99,40 @@ const AdminDashboard: React.FC = () => {
     finally { setLoadingWithdrawals(false); }
   };
 
+  const fetchProperties = async () => {
+    try {
+      setLoadingProperties(true);
+      const params: any = {};
+      if (pFilter !== 'all') params.moderationStatus = pFilter;
+      const res = await API.get('/admin/properties', { params });
+      if (res.data.success) setProperties(res.data.data);
+    } catch (error) { console.error('Failed to fetch properties'); }
+    finally { setLoadingProperties(false); }
+  };
+
+  const handleModerateProperty = async (propertyId: string, action: 'approved' | 'rejected') => {
+    try {
+      const res = await API.put(`/admin/properties/${propertyId}/moderate`, { moderationStatus: action });
+      if (res.data.success) {
+        toast.success(action === 'approved' ? '✅ Property approved and live!' : '❌ Property rejected');
+        fetchProperties();
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update');
+    }
+  };
+
+  const handleDeleteProperty = async (propertyId: string) => {
+    if (!window.confirm('Are you sure you want to delete this property?')) return;
+    try {
+      await API.delete(`/properties/${propertyId}`);
+      toast.success('Property deleted');
+      fetchProperties();
+    } catch (error: any) {
+      toast.error('Failed to delete property');
+    }
+  };
+
   const handleVerify = async (brokerId: string, status: 'verified' | 'rejected') => {
     try {
       const response = await API.put(`/admin/brokers/${brokerId}/verify`, { verificationStatus: status });
@@ -102,14 +157,18 @@ const AdminDashboard: React.FC = () => {
     const styles: any = {
       pending: 'bg-yellow-100 text-yellow-800',
       verified: 'bg-green-100 text-green-800',
+      approved: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',
-      approved: 'bg-blue-100 text-blue-800',
       paid: 'bg-green-100 text-green-800',
     };
     return styles[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
+
   const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending');
+  const pendingProperties = properties.filter(p => p.moderationStatus === 'pending');
   const filteredWithdrawals = wFilter === 'all' ? withdrawals : withdrawals.filter(w => w.status === wFilter);
 
   return (
@@ -118,13 +177,22 @@ const AdminDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage brokers and withdrawals</p>
+          <p className="text-gray-600">Manage properties, brokers and withdrawals</p>
         </div>
 
         {/* Section Toggle */}
-        <div className="flex space-x-4 mb-8">
+        <div className="flex flex-wrap gap-3 mb-8">
+          <button onClick={() => setActiveSection('properties')}
+            className={`relative px-6 py-3 rounded-xl font-bold text-sm transition-all ${activeSection === 'properties' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'}`}>
+            🏠 Property Moderation
+            {pendingProperties.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {pendingProperties.length}
+              </span>
+            )}
+          </button>
           <button onClick={() => setActiveSection('brokers')}
-            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${activeSection === 'brokers' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'}`}>
+            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${activeSection === 'brokers' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'}`}>
             👥 Broker Applications
           </button>
           <button onClick={() => setActiveSection('withdrawals')}
@@ -138,7 +206,109 @@ const AdminDashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* BROKERS SECTION */}
+        {/* ── PROPERTY MODERATION SECTION ── */}
+        {activeSection === 'properties' && (
+          <>
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+              <div className="flex flex-wrap gap-2">
+                {(['pending', 'approved', 'rejected', 'all'] as const).map(f => (
+                  <button key={f} onClick={() => setPFilter(f)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize text-sm ${
+                      pFilter === f
+                        ? f === 'pending' ? 'bg-yellow-500 text-white'
+                          : f === 'approved' ? 'bg-green-500 text-white'
+                          : f === 'rejected' ? 'bg-red-500 text-white'
+                          : 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}>
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {loadingProperties ? (
+              <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+            ) : properties.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                <div className="text-5xl mb-4">🏠</div>
+                <h3 className="text-xl font-semibold text-gray-700">No {pFilter !== 'all' ? pFilter : ''} properties</h3>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {properties.map((property) => (
+                  <div key={property._id} className="bg-white rounded-xl shadow-md p-5 border border-gray-100">
+                    <div className="flex gap-4">
+                      {/* Image */}
+                      <div className="w-32 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        {property.images && property.images.length > 0 ? (
+                          <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl">🏠</div>
+                        )}
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{property.title}</h3>
+                          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ${getStatusBadge(property.moderationStatus || 'pending')}`}>
+                            {(property.moderationStatus || 'pending').toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-blue-600 font-bold text-lg">{formatPrice(property.price)}</p>
+                        <p className="text-sm text-gray-500">📍 {property.address.street}, {property.address.city} – {property.address.pinCode}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          By: <span className="font-medium text-gray-600">{property.seller?.name}</span> ({property.seller?.email}) ·
+                          {new Date(property.createdAt).toLocaleDateString('en-IN')}
+                        </p>
+                        <div className="flex gap-2 mt-1">
+                          <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{property.propertyType}</span>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">For {property.listingType === 'sale' ? 'Sale' : 'Rent'}</span>
+                          {property.bedrooms && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{property.bedrooms} BHK</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
+                      {(property.moderationStatus === 'pending' || !property.moderationStatus) && (
+                        <>
+                          <button onClick={() => handleModerateProperty(property._id, 'approved')}
+                            className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 text-sm flex items-center justify-center gap-1">
+                            <Check className="w-4 h-4" /> Approve & Go Live
+                          </button>
+                          <button onClick={() => handleModerateProperty(property._id, 'rejected')}
+                            className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 text-sm flex items-center justify-center gap-1">
+                            <X className="w-4 h-4" /> Reject
+                          </button>
+                        </>
+                      )}
+                      {property.moderationStatus === 'approved' && (
+                        <button onClick={() => handleModerateProperty(property._id, 'rejected')}
+                          className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 text-sm">
+                          ❌ Take Down
+                        </button>
+                      )}
+                      {property.moderationStatus === 'rejected' && (
+                        <button onClick={() => handleModerateProperty(property._id, 'approved')}
+                          className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 text-sm">
+                          ✅ Approve
+                        </button>
+                      )}
+                      <button onClick={() => handleDeleteProperty(property._id)}
+                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 text-sm font-medium">
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── BROKERS SECTION ── */}
         {activeSection === 'brokers' && (
           <>
             <div className="bg-white rounded-lg shadow-md p-4 mb-6">
@@ -146,7 +316,7 @@ const AdminDashboard: React.FC = () => {
                 {(['pending', 'verified', 'rejected', 'all'] as const).map(f => (
                   <button key={f} onClick={() => setFilter(f)}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${filter === f ? f === 'pending' ? 'bg-yellow-500 text-white' : f === 'verified' ? 'bg-green-500 text-white' : f === 'rejected' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                    {f} ({brokers.filter(b => f === 'all' ? true : b.verificationStatus === f).length})
+                    {f}
                   </button>
                 ))}
               </div>
@@ -157,7 +327,7 @@ const AdminDashboard: React.FC = () => {
             ) : brokers.length === 0 ? (
               <div className="bg-white rounded-lg shadow-md p-12 text-center">
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No {filter !== 'all' ? filter : ''} applications</h3>
+                <h3 className="text-xl font-semibold text-gray-700">No {filter !== 'all' ? filter : ''} applications</h3>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-6">
@@ -181,7 +351,7 @@ const AdminDashboard: React.FC = () => {
                       <button onClick={() => setSelectedBroker(selectedBroker?._id === broker._id ? null : broker)}
                         className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium flex items-center space-x-2">
                         <Eye className="w-4 h-4" />
-                        <span>{selectedBroker?._id === broker._id ? 'Hide' : 'View'} Details</span>
+                        <span>{selectedBroker?._id === broker._id ? 'Hide' : 'View'}</span>
                       </button>
                     </div>
 
@@ -207,12 +377,8 @@ const AdminDashboard: React.FC = () => {
                             </button>
                           </div>
                         )}
-                        {broker.verificationStatus === 'verified' && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">✅ This broker has been verified</div>
-                        )}
-                        {broker.verificationStatus === 'rejected' && (
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">❌ This application was rejected</div>
-                        )}
+                        {broker.verificationStatus === 'verified' && <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">✅ This broker has been verified</div>}
+                        {broker.verificationStatus === 'rejected' && <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">❌ This application was rejected</div>}
                       </div>
                     )}
                   </div>
@@ -222,10 +388,9 @@ const AdminDashboard: React.FC = () => {
           </>
         )}
 
-        {/* WITHDRAWALS SECTION */}
+        {/* ── WITHDRAWALS SECTION ── */}
         {activeSection === 'withdrawals' && (
           <>
-            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                 <p className="text-sm text-yellow-700 font-medium">Pending Requests</p>
@@ -243,7 +408,6 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Filter */}
             <div className="flex space-x-2 mb-6 flex-wrap gap-2">
               {['all', 'pending', 'approved', 'paid', 'rejected'].map(f => (
                 <button key={f} onClick={() => setWFilter(f)}
@@ -271,15 +435,11 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusBadge(w.status)}`}>{w.status}</span>
                     </div>
-
-                    {/* Broker Info */}
                     <div className="bg-gray-50 rounded-lg p-4 mb-4">
                       <p className="text-sm font-bold text-gray-700 mb-1">👤 Broker</p>
                       <p className="text-sm text-gray-600">Name: {w.broker?.user?.name || 'N/A'}</p>
                       <p className="text-sm text-gray-600">Email: {w.broker?.user?.email || 'N/A'}</p>
                     </div>
-
-                    {/* Payment Details */}
                     <div className="bg-blue-50 rounded-lg p-4 mb-4">
                       <p className="text-sm font-bold text-blue-700 mb-1">💳 Payment To</p>
                       {w.paymentMethod === 'upi' ? (
@@ -293,8 +453,6 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Admin Note Input */}
                     {w.status === 'pending' && (
                       <div className="mb-4">
                         <input type="text" placeholder="Add note (optional)" value={adminNote[w._id] || ''}
@@ -302,27 +460,18 @@ const AdminDashboard: React.FC = () => {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
                       </div>
                     )}
-
                     {w.adminNote && <p className="text-xs text-gray-600 bg-gray-100 rounded p-2 mb-4">Note: {w.adminNote}</p>}
-
-                    {/* Action Buttons */}
                     {w.status === 'pending' && (
                       <div className="flex space-x-3">
                         <button onClick={() => handleWithdrawalUpdate(w._id, 'approved')} disabled={updatingId === w._id}
-                          className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 text-sm">
-                          ✅ Approve
-                        </button>
+                          className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 text-sm">✅ Approve</button>
                         <button onClick={() => handleWithdrawalUpdate(w._id, 'rejected')} disabled={updatingId === w._id}
-                          className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 disabled:bg-gray-400 text-sm">
-                          ❌ Reject
-                        </button>
+                          className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 disabled:bg-gray-400 text-sm">❌ Reject</button>
                       </div>
                     )}
                     {w.status === 'approved' && (
                       <button onClick={() => handleWithdrawalUpdate(w._id, 'paid')} disabled={updatingId === w._id}
-                        className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 text-sm">
-                        💚 Mark as Paid
-                      </button>
+                        className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 text-sm">💚 Mark as Paid</button>
                     )}
                   </div>
                 ))}

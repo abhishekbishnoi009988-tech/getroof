@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, X } from 'lucide-react';
 import Navbar from '../components/Layout/Navbar';
@@ -24,11 +24,9 @@ interface Property {
   bedrooms?: number;
   bathrooms?: number;
   status: string;
-  // Hostel/PG fields
   hostelName?: string;
   gender?: string;
   hostelAmenities?: string[];
-  timings?: string;
 }
 
 const rentCategories = [
@@ -45,24 +43,39 @@ const PropertyList: React.FC = () => {
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pinCodeSearch, setPinCodeSearch] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [rentCategory, setRentCategory] = useState<'all' | 'house' | 'hostel' | 'pg'>('all');
 
+  // Debounce timer ref
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch on mount and when type changes
   useEffect(() => {
-    fetchAllProperties();
+    fetchProperties('');
   }, [type]);
 
-  const fetchAllProperties = async () => {
+  // Live search with debounce — fires 400ms after user stops typing
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchProperties(searchText);
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchText]);
+
+  const fetchProperties = async (search: string) => {
     setLoading(true);
     try {
       const params: any = {};
       if (type === 'buy') params.listingType = 'sale';
       else if (type === 'rent') params.listingType = 'rent';
+      if (search.trim()) params.search = search.trim();
       if (minPrice) params.minPrice = minPrice;
       if (maxPrice) params.maxPrice = maxPrice;
+
       const response = await API.get('/properties', { params });
       setProperties(response.data.data || []);
     } catch (error) {
@@ -73,38 +86,17 @@ const PropertyList: React.FC = () => {
     }
   };
 
-  const handlePinCodeSearch = async () => {
-    if (!/^\d{6}$/.test(pinCodeSearch)) {
-      toast.error('Please enter a valid 6-digit PIN code');
-      return;
-    }
-    setLoading(true);
-    try {
-      const params: any = { pinCode: pinCodeSearch };
-      if (type === 'buy') params.listingType = 'sale';
-      else if (type === 'rent') params.listingType = 'rent';
-      if (minPrice) params.minPrice = minPrice;
-      if (maxPrice) params.maxPrice = maxPrice;
-      const response = await API.get('/properties', { params });
-      setProperties(response.data.data || []);
-      if (response.data.count === 0) {
-        toast.error(`No properties found in PIN code ${pinCodeSearch}`);
-      } else {
-        toast.success(`Found ${response.data.count} properties in PIN code ${pinCodeSearch}`);
-      }
-    } catch (error) {
-      toast.error('Search failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleClear = () => {
+    setSearchText('');
+    fetchProperties('');
   };
 
-  const handleClearSearch = () => {
-    setPinCodeSearch('');
-    fetchAllProperties();
+  const applyFilters = () => {
+    fetchProperties(searchText);
+    setShowFilters(false);
   };
 
-  // Filter properties by rent category
+  // Frontend filter by rent category
   const filteredProperties = type === 'rent' && rentCategory !== 'all'
     ? properties.filter((p) => {
         if (rentCategory === 'house') return p.propertyType !== 'hostel' && p.propertyType !== 'pg';
@@ -112,16 +104,10 @@ const PropertyList: React.FC = () => {
       })
     : properties;
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
 
   const genderLabel = (g?: string) => {
-    if (!g) return '';
     if (g === 'boys') return '👦 Boys Only';
     if (g === 'girls') return '👧 Girls Only';
     if (g === 'coed') return '👫 Co-ed';
@@ -133,46 +119,50 @@ const PropertyList: React.FC = () => {
       <Navbar />
 
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-6">
+
         {/* Search Bar */}
         <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
             {type === 'buy' ? '🏠 Properties for Sale' : '🏘️ Properties for Rent'}
           </h1>
-          <p className="text-gray-500 text-sm mb-4">Find your perfect property by PIN code</p>
+          <p className="text-gray-500 text-sm mb-4">
+            Search by area name, locality, city or PIN code
+          </p>
 
+          {/* Search Input */}
           <div className="flex flex-col gap-3">
-            <input
-              type="text"
-              maxLength={6}
-              pattern="\d{6}"
-              value={pinCodeSearch}
-              onChange={(e) => setPinCodeSearch(e.target.value.replace(/\D/g, ''))}
-              placeholder="Enter 6-digit PIN code (e.g., 302020)"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base outline-none"
-              onKeyPress={(e) => e.key === 'Enter' && handlePinCodeSearch()}
-            />
-            <div className="flex gap-2">
-              <button onClick={handlePinCodeSearch} disabled={loading}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 font-semibold flex items-center justify-center gap-2 text-base">
-                <Search className="w-5 h-5" />
-                <span>Search</span>
-              </button>
-              {pinCodeSearch && (
-                <button onClick={handleClearSearch}
-                  className="px-4 py-3 bg-gray-100 rounded-xl hover:bg-gray-200 border border-gray-200">
-                  <X className="w-5 h-5 text-gray-600" />
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder='Try "Banar", "Paota", "Jodhpur" or "342027"...'
+                className="w-full pl-12 pr-10 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base outline-none"
+              />
+              {searchText && (
+                <button onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
                 </button>
               )}
-              <button onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-3 rounded-xl border flex items-center gap-2 font-medium text-sm ${
+            </div>
+
+            {/* Filter button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-medium text-sm ${
                   showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                }`}>
-                <Filter className="w-5 h-5" />
-                <span className="hidden sm:inline">Filters</span>
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                <span>Price Filter</span>
+                {(minPrice || maxPrice) && <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">On</span>}
               </button>
             </div>
           </div>
 
+          {/* Price Filters Panel */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <h3 className="font-semibold mb-3 text-gray-800">💰 Price Range</h3>
@@ -189,29 +179,30 @@ const PropertyList: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-3 mt-3">
-                <button onClick={() => { if (pinCodeSearch) handlePinCodeSearch(); else fetchAllProperties(); }}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium text-sm">Apply Filters</button>
-                <button onClick={() => { setMinPrice(''); setMaxPrice(''); setShowFilters(false); }}
-                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 font-medium text-sm">Clear</button>
+                <button onClick={applyFilters}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium text-sm">
+                  Apply Filters
+                </button>
+                <button onClick={() => { setMinPrice(''); setMaxPrice(''); setShowFilters(false); fetchProperties(searchText); }}
+                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 font-medium text-sm">
+                  Clear
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* ── Rent Category Icon Row ── */}
+        {/* Rent Category Icons */}
         {type === 'rent' && (
           <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
             <div className="flex justify-center gap-4 sm:gap-8">
               {rentCategories.map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setRentCategory(cat.key as any)}
+                <button key={cat.key} onClick={() => setRentCategory(cat.key as any)}
                   className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all ${
                     rentCategory === cat.key
                       ? 'bg-blue-600 text-white shadow-md scale-105'
                       : 'bg-gray-50 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
-                  }`}
-                >
+                  }`}>
                   <span className="text-3xl">{cat.emoji}</span>
                   <span className="text-xs font-semibold">{cat.label}</span>
                 </button>
@@ -221,12 +212,16 @@ const PropertyList: React.FC = () => {
         )}
 
         {/* Results Count */}
-        <div className="mb-4 px-1">
-          <p className="text-gray-500 text-sm">
-            {loading ? '🔍 Searching...' : `✅ ${filteredProperties.length} properties found`}
-            {pinCodeSearch && ` in PIN code ${pinCodeSearch}`}
-            {type === 'rent' && rentCategory !== 'all' && ` · ${rentCategories.find(c => c.key === rentCategory)?.label}`}
-          </p>
+        <div className="mb-4 px-1 flex items-center gap-2">
+          {loading ? (
+            <p className="text-gray-500 text-sm">🔍 Searching...</p>
+          ) : (
+            <p className="text-gray-500 text-sm">
+              ✅ <strong>{filteredProperties.length}</strong> properties found
+              {searchText && <span className="text-blue-600"> for "<strong>{searchText}</strong>"</span>}
+              {type === 'rent' && rentCategory !== 'all' && ` · ${rentCategories.find(c => c.key === rentCategory)?.label}`}
+            </p>
+          )}
         </div>
 
         {/* Property Grid */}
@@ -236,19 +231,15 @@ const PropertyList: React.FC = () => {
           </div>
         ) : filteredProperties.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-            <div className="text-6xl mb-4">
-              {rentCategory === 'hostel' ? '🏨' : rentCategory === 'pg' ? '🛏️' : '🏠'}
-            </div>
+            <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">No Properties Found</h3>
             <p className="text-gray-500 mb-6">
-              {pinCodeSearch
-                ? `No properties available in PIN code ${pinCodeSearch}`
-                : rentCategory !== 'all'
-                ? `No ${rentCategories.find(c => c.key === rentCategory)?.label} available yet`
-                : 'Try adjusting your filters or search by PIN code'}
+              {searchText
+                ? `No properties found for "${searchText}". Try a different area name or PIN code.`
+                : 'No properties available yet.'}
             </p>
-            {(pinCodeSearch || rentCategory !== 'all') && (
-              <button onClick={() => { handleClearSearch(); setRentCategory('all'); }}
+            {searchText && (
+              <button onClick={handleClear}
                 className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 font-medium">
                 View All Properties
               </button>
@@ -262,7 +253,7 @@ const PropertyList: React.FC = () => {
                 <div key={property._id} onClick={() => navigate(`/property/${property._id}`)}
                   className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100">
 
-                  {/* Property Image */}
+                  {/* Image */}
                   <div className="relative h-52 bg-gray-100">
                     {property.images && property.images.length > 0 ? (
                       <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover"
@@ -272,17 +263,14 @@ const PropertyList: React.FC = () => {
                         {property.propertyType === 'hostel' ? '🏨' : property.propertyType === 'pg' ? '🛏️' : '🏠'}
                       </div>
                     )}
-                    {/* PIN Code Badge */}
                     <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
                       📍 {property.address.pinCode}
                     </div>
-                    {/* Type Badge */}
                     <div className="absolute top-3 left-3 bg-white text-xs font-bold shadow-md px-2 py-1 rounded-full">
                       {property.propertyType === 'hostel' ? '🏨 Hostel'
                         : property.propertyType === 'pg' ? '🛏️ PG'
                         : property.listingType === 'sale' ? '🏷️ For Sale' : '🔑 For Rent'}
                     </div>
-                    {/* Gender badge for hostel/pg */}
                     {isHostelOrPG && property.gender && property.gender !== 'any' && (
                       <div className="absolute bottom-3 left-3 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full">
                         {genderLabel(property.gender)}
@@ -290,27 +278,24 @@ const PropertyList: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Property Info */}
+                  {/* Info */}
                   <div className="p-4">
-                    {/* Hostel Name */}
                     {isHostelOrPG && property.hostelName && (
                       <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">{property.hostelName}</p>
                     )}
-
                     <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">{property.title}</h3>
-
-                    <p className="text-xl font-bold text-blue-600 mb-3">
+                    <p className="text-xl font-bold text-blue-600 mb-2">
                       {formatPrice(property.price)}
-                      {property.listingType === 'rent' && (
-                        <span className="text-sm font-normal text-gray-500">/month</span>
-                      )}
+                      {property.listingType === 'rent' && <span className="text-sm font-normal text-gray-500">/month</span>}
+                    </p>
+
+                    {/* Address highlight */}
+                    <p className="text-xs text-gray-500 mb-2 line-clamp-1">
+                      📍 {property.address.street}, {property.address.city}, {property.address.state}
                     </p>
 
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span className="bg-gray-50 text-gray-600 text-xs px-2 py-1 rounded-lg border border-gray-100">
-                        📍 {property.address.city}, {property.address.state}
-                      </span>
-                      {!isHostelOrPG && (
+                      {!isHostelOrPG && property.area > 0 && (
                         <span className="bg-gray-50 text-gray-600 text-xs px-2 py-1 rounded-lg border border-gray-100">
                           📏 {property.area} sq ft
                         </span>
@@ -320,7 +305,6 @@ const PropertyList: React.FC = () => {
                           🛏️ {property.bedrooms} BHK
                         </span>
                       )}
-                      {/* Hostel amenity pills — show first 2 */}
                       {isHostelOrPG && property.hostelAmenities && property.hostelAmenities.slice(0, 2).map((a) => (
                         <span key={a} className="bg-orange-50 text-orange-600 text-xs px-2 py-1 rounded-lg border border-orange-100 font-medium">
                           ✓ {a}

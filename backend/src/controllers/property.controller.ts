@@ -114,17 +114,36 @@ export const createProperty = async (req: any, res: Response) => {
   }
 };
 
-// @desc    Get all properties (with PIN code filter)
-//          Available properties shown first, rented at bottom
+// @desc    Get all properties with optional text search across address fields
 // @route   GET /api/v1/properties
 // @access  Public
 export const getAllProperties = async (req: any, res: Response) => {
   try {
-    const { listingType, minPrice, maxPrice, pinCode, propertyType } = req.query;
+    const { listingType, minPrice, maxPrice, pinCode, propertyType, search } = req.query;
 
     const query: any = {};
 
-    if (pinCode) query['address.pinCode'] = pinCode;
+    // ── Text search across all address fields ──────────────────────────────
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      // If it looks like a PIN code (6 digits) search only pinCode for precision
+      if (/^\d{6}$/.test(searchTerm)) {
+        query['address.pinCode'] = searchTerm;
+      } else {
+        // Search across street, city, state, pinCode with case-insensitive regex
+        query.$or = [
+          { 'address.street': { $regex: searchTerm, $options: 'i' } },
+          { 'address.city': { $regex: searchTerm, $options: 'i' } },
+          { 'address.state': { $regex: searchTerm, $options: 'i' } },
+          { 'address.pinCode': { $regex: searchTerm, $options: 'i' } },
+          { title: { $regex: searchTerm, $options: 'i' } },
+        ];
+      }
+    } else if (pinCode) {
+      // Legacy pinCode param still supported
+      query['address.pinCode'] = pinCode;
+    }
+
     if (listingType) query.listingType = listingType;
     if (propertyType) query.propertyType = propertyType;
 
@@ -134,8 +153,6 @@ export const getAllProperties = async (req: any, res: Response) => {
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
-    // For rent listings: show active first, rented at bottom
-    // For sale listings: only show active
     if (listingType === 'rent') {
       query.status = { $in: ['active', 'rented'] };
     } else {
@@ -144,11 +161,7 @@ export const getAllProperties = async (req: any, res: Response) => {
 
     const properties = await Property.find(query)
       .populate('seller', 'name email phone')
-      .sort({ 
-        // active comes before rented (a < r alphabetically)
-        status: 1,
-        createdAt: -1 
-      });
+      .sort({ status: 1, createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -238,7 +251,12 @@ export const markAsRented = async (req: any, res: Response) => {
 // @access  Public
 export const getProperty = async (req: any, res: Response) => {
   try {
-    const property = await Property.findById(req.params.id).populate('seller', 'name email phone');
+    const property = await Property.findById(req.params.id)
+      .populate('seller', 'name email phone')
+      .populate({
+        path: 'listedByBroker',
+        populate: { path: 'user', select: 'name email profilePicture' },
+      });
 
     if (!property) {
       return res.status(404).json({ success: false, message: 'Property not found' });

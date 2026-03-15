@@ -1,20 +1,28 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
   email: string;
-  password?: string; // Make optional for Google users
-  googleId?: string; // Add this
+  password?: string;
+  googleId?: string;
   role: 'user' | 'broker' | 'admin';
   phone?: string;
   profilePicture?: string;
+  // Email verification
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  // FCM push notifications
+  fcmToken?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
   getSignedJwtToken(): string;
+  getEmailVerificationToken(): string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -35,59 +43,58 @@ const userSchema = new Schema<IUser>(
       type: String,
       minlength: 6,
       select: false,
-      // Remove 'required' - not needed for Google users
     },
     googleId: {
       type: String,
       unique: true,
-      sparse: true, // Allow null values, but enforce uniqueness when present
+      sparse: true,
     },
     role: {
       type: String,
       enum: ['user', 'broker', 'admin'],
       default: 'user',
     },
-    phone: {
-      type: String,
+    phone: { type: String },
+    profilePicture: { type: String },
+    // Email verification
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
-    profilePicture: {
-      type: String,
-    },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
+    // FCM token for push notifications
+    fcmToken: { type: String },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Hash password before saving (only if password exists)
+// Hash password before saving
 userSchema.pre('save', async function (next) {
-  // Skip if password is not modified or doesn't exist
-  if (!this.password || !this.isModified('password')) {
-    return next();
-  }
-
+  if (!this.password || !this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Compare password method
+// Compare password
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
-  // If no password exists (Google user), return false
-  if (!this.password) {
-    return false;
-  }
+  if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// JWT token
 userSchema.methods.getSignedJwtToken = function (): string {
   const secret = process.env.JWT_SECRET as string;
+  return jwt.sign({ id: this._id.toString() }, secret, { expiresIn: '30d' });
+};
 
-  return jwt.sign(
-    { id: this._id.toString() },
-    secret,
-    { expiresIn: '30d' }
-  );
+// Generate email verification token
+userSchema.methods.getEmailVerificationToken = function (): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  return token; // Return unhashed token (sent in email)
 };
 
 export default mongoose.model<IUser>('User', userSchema);

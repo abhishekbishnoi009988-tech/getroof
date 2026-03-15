@@ -5,6 +5,7 @@ import AuthCallback from './pages/AuthCallback';
 import AdminDashboard from './pages/AdminDashboard';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -58,15 +59,16 @@ function App() {
       <Routes>
         {/* Dashboard is the home page */}
         <Route path="/" element={<Dashboard />} />
-        
+
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
         {/* Main Routes */}
         <Route path="/dashboard" element={<Dashboard />} />
-        
+
         {/* Property Routes */}
         <Route path="/property/:id" element={<PropertyDetail />} />
         <Route path="/upload-house" element={<UploadHouse />} />
@@ -76,7 +78,7 @@ function App() {
         {/* Legal Routes */}
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
-        
+
         {/* Broker Routes */}
         <Route path="/become-broker" element={<BecomeBroker />} />
         <Route path="/broker/notifications" element={<BrokerNotifications />} />
@@ -88,7 +90,7 @@ function App() {
         {/* Payment Routes */}
         <Route path="/broker/record-sale" element={<RecordSale />} />
         <Route path="/broker/payment-history" element={<PaymentHistory />} />
-        
+
         {/* Catch all - redirect to dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -104,12 +106,8 @@ function App() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600 p-2 rounded-full">
-              ✕
-            </button>
-            <button onClick={handleInstall} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700">
-              Install
-            </button>
+            <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600 p-2 rounded-full">✕</button>
+            <button onClick={handleInstall} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700">Install</button>
           </div>
         </div>
       )}
