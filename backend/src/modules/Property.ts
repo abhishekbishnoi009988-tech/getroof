@@ -1,132 +1,140 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IProperty extends Document {
-  _id: mongoose.Types.ObjectId;
+  seller: mongoose.Types.ObjectId;
   title: string;
   description: string;
   price: number;
-  listingFee: number;
   address: {
     street: string;
     city: string;
     state: string;
-    zipCode: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
+    pinCode: string;
   };
-  propertyType: 'house' | 'apartment' | 'villa' | 'plot' | 'commercial';
+  propertyType: 'house' | 'apartment' | 'villa' | 'plot' | 'commercial' | 'hostel' | 'pg';
   listingType: 'sale' | 'rent';
-  listedBy: 'broker' | 'owner'; // NEW FIELD
   area: number;
   bedrooms?: number;
   bathrooms?: number;
+  amenities: string[];
   images: string[];
-  amenities?: string[];
-  status: 'available' | 'sold' | 'rented' | 'pending';
-  seller: mongoose.Types.ObjectId;
-  views: number;
+  video?: string;
+  ownerPhone?: string;
+  status: 'active' | 'sold' | 'rented';
+  // Hostel/PG specific
+  hostelName?: string;
+  gender?: 'boys' | 'girls' | 'coed' | 'any';
+  hostelAmenities?: string[];
+  rules?: string;
+  timings?: string;
+  // Broker listing fields
+  listedBy?: 'owner' | 'broker';
+  listedByBroker?: mongoose.Types.ObjectId;
+  moderationStatus?: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
 }
 
 const propertySchema = new Schema<IProperty>(
   {
-    title: {
-      type: String,
-      required: [true, 'Please add a title'],
-      trim: true,
-      maxlength: [100, 'Title cannot be more than 100 characters'],
-    },
-    description: {
-      type: String,
-      required: [true, 'Please add a description'],
-      maxlength: [2000, 'Description cannot be more than 2000 characters'],
-    },
-    price: {
-      type: Number,
-      required: [true, 'Please add a price'],
-      min: [0, 'Price cannot be negative'],
-    },
-    listingFee: {
-      type: Number,
-      default: 600, // NEW: Flat ₹600 fee
-    },
-    address: {
-      street: {
-        type: String,
-        required: [true, 'Please add a street address'],
-      },
-      city: {
-        type: String,
-        required: [true, 'Please add a city'],
-      },
-      state: {
-        type: String,
-        required: [true, 'Please add a state'],
-      },
-      zipCode: {
-        type: String,
-        required: [true, 'Please add a zip code'],
-      },
-      coordinates: {
-        lat: Number,
-        lng: Number,
-      },
-    },
-    propertyType: {
-      type: String,
-      required: [true, 'Please add a property type'],
-      enum: ['house', 'apartment', 'villa', 'plot', 'commercial'],
-    },
-    listingType: {
-      type: String,
-      required: [true, 'Please specify if property is for sale or rent'],
-      enum: ['sale', 'rent'],
-    },
-    listedBy: {
-      type: String,
-      required: true,
-      enum: ['broker', 'owner'],
-      default: 'owner', // NEW FIELD
-    },
-    area: {
-      type: Number,
-      required: [true, 'Please add property area'],
-      min: [0, 'Area cannot be negative'],
-    },
-    bedrooms: {
-      type: Number,
-      min: [0, 'Bedrooms cannot be negative'],
-    },
-    bathrooms: {
-      type: Number,
-      min: [0, 'Bathrooms cannot be negative'],
-    },
-    images: {
-      type: [String],
-      validate: {
-        validator: function (v: string[]) {
-          return v.length <= 10; // Max 10 images
-        },
-        message: 'Cannot upload more than 10 images',
-      },
-    },
-    amenities: [String],
-    status: {
-      type: String,
-      enum: ['available', 'sold', 'rented', 'pending'],
-      default: 'available',
-    },
     seller: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    views: {
+    title: {
+      type: String,
+      required: [true, 'Please add a title'],
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: [true, 'Please add a description'],
+    },
+    price: {
       type: Number,
-      default: 0,
+      required: [true, 'Please add a price'],
+    },
+    address: {
+      street: {
+        type: String,
+        required: [true, 'Please add street address'],
+      },
+      city: {
+        type: String,
+        required: [true, 'Please add city'],
+      },
+      state: {
+        type: String,
+        required: [true, 'Please add state'],
+      },
+      pinCode: {
+        type: String,
+        required: [true, 'Please add PIN code'],
+        match: [/^\d{6}$/, 'Please add a valid 6-digit PIN code'],
+      },
+    },
+    propertyType: {
+      type: String,
+      enum: ['house', 'apartment', 'villa', 'plot', 'commercial', 'hostel', 'pg'],
+      required: true,
+    },
+    listingType: {
+      type: String,
+      enum: ['sale', 'rent'],
+      required: true,
+    },
+    area: {
+      type: Number,
+      default: 1,
+    },
+    bedrooms: Number,
+    bathrooms: Number,
+    amenities: [String],
+    images: [String],
+    video: {
+      type: String,
+    },
+    ownerPhone: {
+      type: String,
+      match: [/^[6-9]\d{9}$/, 'Please add a valid 10-digit mobile number'],
+    },
+    status: {
+      type: String,
+      enum: ['active', 'sold', 'rented'],
+      default: 'active',
+    },
+    // Hostel/PG specific fields
+    hostelName: {
+      type: String,
+      trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ['boys', 'girls', 'coed', 'any'],
+      default: 'any',
+    },
+    hostelAmenities: [String],
+    rules: {
+      type: String,
+    },
+    timings: {
+      type: String,
+    },
+    // Broker listing fields
+    listedBy: {
+      type: String,
+      enum: ['owner', 'broker'],
+      default: 'owner',
+    },
+    listedByBroker: {
+      type: Schema.Types.ObjectId,
+      ref: 'Broker',
+    },
+    moderationStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'approved',
     },
   },
   {
@@ -134,7 +142,10 @@ const propertySchema = new Schema<IProperty>(
   }
 );
 
-// Index for location-based queries
-propertySchema.index({ 'address.city': 1, 'address.state': 1 });
+propertySchema.index({ 'address.pinCode': 1 });
+propertySchema.index({ listingType: 1 });
+propertySchema.index({ status: 1 });
+propertySchema.index({ propertyType: 1 });
+propertySchema.index({ 'address.city': 1 });
 
 export default mongoose.model<IProperty>('Property', propertySchema);

@@ -10,6 +10,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const MAX_IMAGES = 10;
+
 // Helper: Upload base64 to Cloudinary
 const uploadToCloudinary = async (base64Data: string, resourceType: 'image' | 'video') => {
   const result = await cloudinary.uploader.upload(base64Data, {
@@ -41,7 +43,7 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       hostelName, gender, hostelAmenities, rules, timings,
     } = req.body;
 
-    // Fixed: allow area to be 0 or 1 for hostel/pg (area is not required for them)
+    // Required field validation
     if (!title || !description || !price || !address || !propertyType || !listingType) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
@@ -50,11 +52,23 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid 6-digit PIN code' });
     }
 
+    // Backend image limit enforcement
+    if (images && Array.isArray(images) && images.length > MAX_IMAGES) {
+      return res.status(400).json({
+        success: false,
+        message: `You can upload a maximum of ${MAX_IMAGES} images per property`,
+      });
+    }
+
     let imageUrls: string[] = [];
     if (images && images.length > 0) {
       console.log(`📸 Uploading ${images.length} images to Cloudinary...`);
-      imageUrls = await Promise.all(images.map((img: string) => uploadToCloudinary(img, 'image')));
-      console.log('✅ Images uploaded');
+      // Upload images one by one to avoid memory spikes with large batches
+      for (const img of images) {
+        const url = await uploadToCloudinary(img, 'image');
+        imageUrls.push(url);
+      }
+      console.log('✅ Images uploaded:', imageUrls.length);
     }
 
     let videoUrl: string | undefined;
@@ -68,11 +82,18 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
 
     const property = await Property.create({
       seller: req.user._id,
-      title, description,
+      title,
+      description,
       price: Number(price),
-      address: { street: address.street, city: address.city, state: address.state, pinCode: address.pinCode },
-      propertyType, listingType,
-      area: Number(area) || 1, // default to 1 for hostel/pg where area is not required
+      address: {
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        pinCode: address.pinCode,
+      },
+      propertyType,
+      listingType,
+      area: Number(area) || 1,
       bedrooms: bedrooms ? Number(bedrooms) : undefined,
       bathrooms: bathrooms ? Number(bathrooms) : undefined,
       amenities: amenities || [],
@@ -80,6 +101,7 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       video: videoUrl,
       ownerPhone: ownerPhone || undefined,
       status: 'active',
+      listedBy: 'owner',
       // Hostel/PG specific fields
       ...(isHostelOrPG && {
         hostelName: hostelName || undefined,

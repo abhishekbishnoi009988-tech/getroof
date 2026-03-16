@@ -56,9 +56,14 @@ const UploadHouse: React.FC = () => {
     }));
   };
 
+  const MAX_IMAGES = 10;
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (imageFiles.length + files.length > 5) { toast.error('Max 5 images'); return; }
+    if (imageFiles.length + files.length > MAX_IMAGES) {
+      toast.error(`Max ${MAX_IMAGES} images allowed`);
+      return;
+    }
     const validFiles = files.filter((file) => {
       if (!file.type.startsWith('image/')) { toast.error(`${file.name} is not an image`); return false; }
       if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} too large (max 5MB)`); return false; }
@@ -339,21 +344,43 @@ const UploadHouse: React.FC = () => {
 
             {/* Photos */}
             <div className="border-b border-gray-200 pb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">📸 Property Photos (Up to 5)</h2>
-              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                📸 Property Photos (Up to {MAX_IMAGES})
+              </h2>
+              <label className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 transition-colors ${
+                imageFiles.length >= MAX_IMAGES ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'
+              }`}>
                 <Camera className="w-10 h-10 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-500 font-semibold">Click to upload photos</p>
-                <p className="text-xs text-gray-400">PNG, JPG (Max 5MB each) · {imageFiles.length}/5</p>
+                <p className="text-sm text-gray-500 font-semibold">
+                  {imageFiles.length >= MAX_IMAGES ? `Maximum ${MAX_IMAGES} photos reached` : 'Click to upload photos'}
+                </p>
+                <p className="text-xs text-gray-400">PNG, JPG (Max 5MB each) · {imageFiles.length}/{MAX_IMAGES}</p>
                 <p className="text-xs text-blue-500 mt-1 font-medium">📌 First photo will be the cover image</p>
-                <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageSelect} disabled={imageFiles.length >= 5} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  disabled={imageFiles.length >= MAX_IMAGES}
+                />
               </label>
+
               {imagePreviews.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative group">
                       <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-32 object-cover rounded-lg" />
-                      <button type="button" onClick={() => removeImage(index)} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-4 h-4" /></button>
-                      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">{index === 0 ? 'Cover' : `Photo ${index + 1}`}</div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                        {index === 0 ? 'Cover' : `Photo ${index + 1}`}
+                      </div>
                     </div>
                   ))}
                 </div>
