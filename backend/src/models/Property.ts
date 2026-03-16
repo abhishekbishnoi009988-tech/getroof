@@ -11,7 +11,7 @@ export interface IProperty extends Document {
     state: string;
     pinCode: string;
   };
-  propertyType: 'house' | 'apartment' | 'villa' | 'plot' | 'commercial';
+  propertyType: 'house' | 'apartment' | 'villa' | 'plot' | 'commercial' | 'hostel' | 'pg';
   listingType: 'sale' | 'rent';
   area: number;
   bedrooms?: number;
@@ -21,6 +21,14 @@ export interface IProperty extends Document {
   video?: string;
   ownerPhone?: string;
   status: 'active' | 'sold' | 'rented';
+  hostelName?: string;
+  gender?: 'boys' | 'girls' | 'coed' | 'any';
+  hostelAmenities?: string[];
+  rules?: string;
+  timings?: string;
+  listedBy?: 'owner' | 'broker';
+  listedByBroker?: mongoose.Types.ObjectId;
+  moderationStatus?: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,7 +74,7 @@ const propertySchema = new Schema<IProperty>(
     },
     propertyType: {
       type: String,
-      enum: ['house', 'apartment', 'villa', 'plot', 'commercial'],
+      enum: ['house', 'apartment', 'villa', 'plot', 'commercial', 'hostel', 'pg'],
       required: true,
     },
     listingType: {
@@ -76,7 +84,7 @@ const propertySchema = new Schema<IProperty>(
     },
     area: {
       type: Number,
-      required: [true, 'Please add area in square feet'],
+      default: 1,
     },
     bedrooms: Number,
     bathrooms: Number,
@@ -94,6 +102,36 @@ const propertySchema = new Schema<IProperty>(
       enum: ['active', 'sold', 'rented'],
       default: 'active',
     },
+    hostelName: {
+      type: String,
+      trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ['boys', 'girls', 'coed', 'any'],
+      default: 'any',
+    },
+    hostelAmenities: [String],
+    rules: {
+      type: String,
+    },
+    timings: {
+      type: String,
+    },
+    listedBy: {
+      type: String,
+      enum: ['owner', 'broker'],
+      default: 'owner',
+    },
+    listedByBroker: {
+      type: Schema.Types.ObjectId,
+      ref: 'Broker',
+    },
+    moderationStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'approved',
+    },
   },
   {
     timestamps: true,
@@ -103,5 +141,7 @@ const propertySchema = new Schema<IProperty>(
 propertySchema.index({ 'address.pinCode': 1 });
 propertySchema.index({ listingType: 1 });
 propertySchema.index({ status: 1 });
+propertySchema.index({ propertyType: 1 });
+propertySchema.index({ 'address.city': 1 });
 
 export default mongoose.model<IProperty>('Property', propertySchema);
