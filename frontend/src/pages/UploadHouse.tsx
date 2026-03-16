@@ -144,7 +144,7 @@ const UploadHouse: React.FC = () => {
         address: formData.address,
         propertyType: resolvedPropertyType,
         listingType: formType === 'sell' ? 'sale' : 'rent',
-        area: Number(formData.area),
+        area: Number(formData.area) || 1,
         bedrooms: Number(formData.bedrooms) || 0,
         bathrooms: Number(formData.bathrooms) || 0,
         amenities: formData.amenities,
@@ -344,6 +344,7 @@ const UploadHouse: React.FC = () => {
                 <Camera className="w-10 h-10 text-gray-400 mb-2" />
                 <p className="text-sm text-gray-500 font-semibold">Click to upload photos</p>
                 <p className="text-xs text-gray-400">PNG, JPG (Max 5MB each) · {imageFiles.length}/5</p>
+                <p className="text-xs text-blue-500 mt-1 font-medium">📌 First photo will be the cover image</p>
                 <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageSelect} disabled={imageFiles.length >= 5} />
               </label>
               {imagePreviews.length > 0 && (

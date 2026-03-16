@@ -19,7 +19,16 @@ interface Property {
   bedrooms?: number;
   bathrooms?: number;
   status: string;
+  hostelName?: string;
+  gender?: string;
 }
+
+const rentCategories = [
+  { key: 'all', label: 'All', emoji: '🏘️' },
+  { key: 'house', label: 'Houses', emoji: '🏠' },
+  { key: 'hostel', label: 'Hostels', emoji: '🏨' },
+  { key: 'pg', label: 'PG', emoji: '🛏️' },
+];
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +37,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [activeType, setActiveType] = useState<'all' | 'sale' | 'rent'>('all');
+  const [rentCategory, setRentCategory] = useState<'all' | 'house' | 'hostel' | 'pg'>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -43,6 +53,11 @@ const Dashboard: React.FC = () => {
     debounceRef.current = setTimeout(() => fetchProperties(searchText, activeType), 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchText, activeType]);
+
+  // Reset rent category when switching away from rent
+  useEffect(() => {
+    if (activeType !== 'rent') setRentCategory('all');
+  }, [activeType]);
 
   const fetchUser = async () => {
     try {
@@ -74,6 +89,14 @@ const Dashboard: React.FC = () => {
     setShowFilters(false);
   };
 
+  // Filter by rent category on frontend
+  const filteredProperties = activeType === 'rent' && rentCategory !== 'all'
+    ? properties.filter((p) => {
+        if (rentCategory === 'house') return p.propertyType !== 'hostel' && p.propertyType !== 'pg';
+        return p.propertyType === rentCategory;
+      })
+    : properties;
+
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(price);
 
@@ -81,7 +104,7 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Navbar user={user} />
 
-      {/* Hero Search */}
+      {/* Sticky search + filters */}
       <div className="bg-white border-b border-gray-100 sticky top-16 z-30 px-4 py-3">
         <div className="max-w-3xl mx-auto">
           {/* Search bar */}
@@ -117,9 +140,7 @@ const Dashboard: React.FC = () => {
               <button key={tab.key}
                 onClick={() => setActiveType(tab.key as any)}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  activeType === tab.key
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  activeType === tab.key ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}>
                 {tab.label}
               </button>
@@ -146,15 +167,36 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Results count */}
-      <div className="max-w-3xl mx-auto px-4 pt-4 pb-2">
-        <p className="text-xs text-gray-400 font-medium">
-          {loading ? 'Loading...' : `${properties.length} properties found${searchText ? ` for "${searchText}"` : ''}`}
-        </p>
-      </div>
+      <div className="max-w-3xl mx-auto px-4 pt-4">
 
-      {/* Property Feed */}
-      <div className="max-w-3xl mx-auto px-4">
+        {/* Rent category icons — only shown when For Rent is selected */}
+        {activeType === 'rent' && (
+          <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+            <div className="flex justify-center gap-4 sm:gap-8">
+              {rentCategories.map((cat) => (
+                <button key={cat.key} onClick={() => setRentCategory(cat.key as any)}
+                  className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all ${
+                    rentCategory === cat.key
+                      ? 'bg-blue-600 text-white shadow-md scale-105'
+                      : 'bg-gray-50 text-gray-600 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
+                  }`}>
+                  <span className="text-2xl">{cat.emoji}</span>
+                  <span className="text-xs font-semibold">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Results count */}
+        <div className="pb-2">
+          <p className="text-xs text-gray-400 font-medium">
+            {loading ? 'Loading...' : `${filteredProperties.length} properties found${searchText ? ` for "${searchText}"` : ''}`}
+            {activeType === 'rent' && rentCategory !== 'all' && ` · ${rentCategories.find(c => c.key === rentCategory)?.label}`}
+          </p>
+        </div>
+
+        {/* Property Feed */}
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -168,7 +210,7 @@ const Dashboard: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : properties.length === 0 ? (
+        ) : filteredProperties.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center mt-4">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-gray-300" />
@@ -177,84 +219,91 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-400 text-sm">
               {searchText ? `No results for "${searchText}"` : 'No properties listed yet'}
             </p>
-            {searchText && (
-              <button onClick={() => setSearchText('')} className="mt-4 text-blue-600 text-sm font-semibold">Clear search</button>
+            {(searchText || rentCategory !== 'all') && (
+              <button onClick={() => { setSearchText(''); setRentCategory('all'); }}
+                className="mt-4 text-blue-600 text-sm font-semibold">Clear filters</button>
             )}
           </div>
         ) : (
           <div className="space-y-4 pb-4">
-            {properties.map((property) => (
-              <div key={property._id} onClick={() => navigate(`/property/${property._id}`)}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 active:scale-[0.99]">
+            {filteredProperties.map((property) => {
+              const isHostelOrPG = property.propertyType === 'hostel' || property.propertyType === 'pg';
+              return (
+                <div key={property._id} onClick={() => navigate(`/property/${property._id}`)}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 active:scale-[0.99]">
 
-                {/* Large image */}
-                <div className="relative h-56 bg-gray-100">
-                  {property.images?.length > 0 ? (
-                    <img src={property.images[0]} alt={property.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=No+Image'; }} />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <MapPin className="w-12 h-12" />
+                  {/* Large image */}
+                  <div className="relative h-56 bg-gray-100">
+                    {property.images?.length > 0 ? (
+                      <img src={property.images[0]} alt={property.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=No+Image'; }} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
+                        {property.propertyType === 'hostel' ? '🏨' : property.propertyType === 'pg' ? '🛏️' : '🏠'}
+                      </div>
+                    )}
+                    {/* Listing type badge */}
+                    <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-md ${
+                      property.propertyType === 'hostel' ? 'bg-orange-500 text-white'
+                      : property.propertyType === 'pg' ? 'bg-purple-600 text-white'
+                      : property.listingType === 'sale' ? 'bg-blue-600 text-white'
+                      : 'bg-green-600 text-white'
+                    }`}>
+                      {property.propertyType === 'hostel' ? 'Hostel'
+                        : property.propertyType === 'pg' ? 'PG'
+                        : property.listingType === 'sale' ? 'For Sale' : 'For Rent'}
                     </div>
-                  )}
-                  {/* Listing type badge */}
-                  <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-md ${
-                    property.listingType === 'sale' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-                  }`}>
-                    {property.listingType === 'sale' ? 'For Sale' : 'For Rent'}
-                  </div>
-                  {/* PIN badge */}
-                  <div className="absolute top-3 right-3 bg-black bg-opacity-50 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
-                    <MapPin className="w-3 h-3 inline mr-1" />{property.address.pinCode}
-                  </div>
-                  {/* Multiple images indicator */}
-                  {property.images?.length > 1 && (
-                    <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white text-xs px-2 py-0.5 rounded-full">
-                      +{property.images.length - 1} photos
+                    {/* PIN badge */}
+                    <div className="absolute top-3 right-3 bg-black bg-opacity-50 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
+                      <MapPin className="w-3 h-3 inline mr-1" />{property.address.pinCode}
                     </div>
-                  )}
-                </div>
+                    {/* Multiple images indicator */}
+                    {property.images?.length > 1 && (
+                      <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white text-xs px-2 py-0.5 rounded-full">
+                        +{property.images.length - 1} photos
+                      </div>
+                    )}
+                  </div>
 
-                {/* Property info */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-bold text-gray-900 text-base leading-tight flex-1 pr-2 line-clamp-1">
+                  {/* Property info */}
+                  <div className="p-4">
+                    {isHostelOrPG && property.hostelName && (
+                      <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">{property.hostelName}</p>
+                    )}
+                    <h3 className="font-bold text-gray-900 text-base leading-tight flex-1 pr-2 line-clamp-1 mb-1">
                       {property.title}
                     </h3>
-                  </div>
-
-                  <p className="text-blue-600 font-bold text-xl mb-2">
-                    {formatPrice(property.price)}
-                    {property.listingType === 'rent' && <span className="text-sm font-normal text-gray-400">/mo</span>}
-                  </p>
-
-                  <div className="flex items-center gap-1 text-gray-400 text-xs mb-3">
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                    <span className="line-clamp-1">{property.address.street}, {property.address.city}, {property.address.state}</span>
-                  </div>
-
-                  {/* Property stats */}
-                  <div className="flex gap-3 pt-3 border-t border-gray-50">
-                    {property.area > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Maximize2 className="w-3.5 h-3.5" />
-                        <span>{property.area} sq ft</span>
+                    <p className="text-blue-600 font-bold text-xl mb-2">
+                      {formatPrice(property.price)}
+                      {property.listingType === 'rent' && <span className="text-sm font-normal text-gray-400">/mo</span>}
+                    </p>
+                    <div className="flex items-center gap-1 text-gray-400 text-xs mb-3">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="line-clamp-1">{property.address.street}, {property.address.city}, {property.address.state}</span>
+                    </div>
+                    {/* Property stats */}
+                    <div className="flex gap-3 pt-3 border-t border-gray-50">
+                      {!isHostelOrPG && property.area > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>{property.area} sq ft</span>
+                        </div>
+                      )}
+                      {!isHostelOrPG && property.bedrooms && property.bedrooms > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <BedDouble className="w-3.5 h-3.5" />
+                          <span>{property.bedrooms} BHK</span>
+                        </div>
+                      )}
+                      <div className="ml-auto">
+                        <span className="text-xs text-gray-400 capitalize">{property.propertyType}</span>
                       </div>
-                    )}
-                    {property.bedrooms && property.bedrooms > 0 && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <BedDouble className="w-3.5 h-3.5" />
-                        <span>{property.bedrooms} BHK</span>
-                      </div>
-                    )}
-                    <div className="ml-auto">
-                      <span className="text-xs text-gray-400 capitalize">{property.propertyType}</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

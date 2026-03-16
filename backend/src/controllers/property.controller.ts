@@ -35,9 +35,14 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
-    const { title, description, price, address, propertyType, listingType, area, bedrooms, bathrooms, amenities, images, video, ownerPhone } = req.body;
+    const {
+      title, description, price, address, propertyType, listingType,
+      area, bedrooms, bathrooms, amenities, images, video, ownerPhone,
+      hostelName, gender, hostelAmenities, rules, timings,
+    } = req.body;
 
-    if (!title || !description || !price || !address || !propertyType || !listingType || !area) {
+    // Fixed: allow area to be 0 or 1 for hostel/pg (area is not required for them)
+    if (!title || !description || !price || !address || !propertyType || !listingType) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
@@ -59,13 +64,15 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       console.log('✅ Video uploaded:', videoUrl);
     }
 
+    const isHostelOrPG = propertyType === 'hostel' || propertyType === 'pg';
+
     const property = await Property.create({
       seller: req.user._id,
       title, description,
       price: Number(price),
       address: { street: address.street, city: address.city, state: address.state, pinCode: address.pinCode },
       propertyType, listingType,
-      area: Number(area),
+      area: Number(area) || 1, // default to 1 for hostel/pg where area is not required
       bedrooms: bedrooms ? Number(bedrooms) : undefined,
       bathrooms: bathrooms ? Number(bathrooms) : undefined,
       amenities: amenities || [],
@@ -73,6 +80,14 @@ export const uploadHouseByOwner = async (req: any, res: Response) => {
       video: videoUrl,
       ownerPhone: ownerPhone || undefined,
       status: 'active',
+      // Hostel/PG specific fields
+      ...(isHostelOrPG && {
+        hostelName: hostelName || undefined,
+        gender: gender || 'any',
+        hostelAmenities: hostelAmenities || [],
+        rules: rules || undefined,
+        timings: timings || undefined,
+      }),
     });
 
     console.log('✅ Property created:', property._id);
@@ -123,14 +138,11 @@ export const getAllProperties = async (req: any, res: Response) => {
 
     const query: any = {};
 
-    // ── Text search across all address fields ──────────────────────────────
     if (search && search.trim()) {
       const searchTerm = search.trim();
-      // If it looks like a PIN code (6 digits) search only pinCode for precision
       if (/^\d{6}$/.test(searchTerm)) {
         query['address.pinCode'] = searchTerm;
       } else {
-        // Search across street, city, state, pinCode with case-insensitive regex
         query.$or = [
           { 'address.street': { $regex: searchTerm, $options: 'i' } },
           { 'address.city': { $regex: searchTerm, $options: 'i' } },
@@ -140,7 +152,6 @@ export const getAllProperties = async (req: any, res: Response) => {
         ];
       }
     } else if (pinCode) {
-      // Legacy pinCode param still supported
       query['address.pinCode'] = pinCode;
     }
 

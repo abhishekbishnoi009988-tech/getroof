@@ -47,17 +47,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
     }
   };
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
-
+  // Notifications tab only shown for broker accounts
   const tabs = [
     { icon: Home, label: 'Buy', path: '/properties?type=buy', match: '/properties' },
     { icon: Key, label: 'Rent', path: '/properties?type=rent', match: '/properties' },
     { icon: PlusSquare, label: 'Post', path: '/upload-house', match: '/upload-house' },
-    {
-      icon: Bell, label: 'Alerts',
-      path: user?.role === 'broker' ? '/broker/notifications' : '/broker/notifications',
-      match: '/broker/notifications'
-    },
+    ...(user?.role === 'broker' ? [{ icon: Bell, label: 'Alerts', path: '/broker/notifications', match: '/broker/notifications' }] : []),
     { icon: User, label: 'Account', path: 'account', match: 'account' },
   ];
 
@@ -141,7 +136,6 @@ const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
             {/* Menu items */}
             <div className="px-4 py-2">
 
-              {/* Common items */}
               <MenuItem icon={Building2} label="My Properties" sub="View your listings"
                 onClick={() => { navigate('/my-properties'); setShowAccountSheet(false); }} />
 
@@ -207,7 +201,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
 
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Your Mobile Number</label>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              <input type="tel" value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="Enter 10-digit mobile number"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 outline-none text-base" />
             </div>
