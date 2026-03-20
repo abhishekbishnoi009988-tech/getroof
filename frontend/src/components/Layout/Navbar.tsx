@@ -4,7 +4,7 @@ import API from '../../services/api';
 import toast from 'react-hot-toast';
 
 interface NavbarProps {
-  user?: any; // optional — if passed from parent, skip re-fetching
+  user?: any;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ user: propUser }) => {
@@ -29,11 +29,23 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser }) => {
   const checkAuth = async () => {
     const token = localStorage.getItem('token');
     if (!token) { setLoading(false); return; }
+
+    // Load from cache instantly
+    const cached = localStorage.getItem('getroof_user');
+    if (cached) {
+      try { setUser(JSON.parse(cached)); } catch (_) {}
+    }
+
+    // Fetch fresh in background
     try {
       const response = await API.get('/auth/me');
-      if (response.data.success) setUser(response.data.data);
+      if (response.data.success) {
+        setUser(response.data.data);
+        localStorage.setItem('getroof_user', JSON.stringify(response.data.data));
+      }
     } catch (_) {
       localStorage.removeItem('token');
+      localStorage.removeItem('getroof_user');
       setUser(null);
     } finally {
       setLoading(false);
@@ -42,6 +54,7 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('getroof_user');
     setUser(null);
     toast.success('Logged out successfully');
     navigate('/login');
@@ -115,6 +128,10 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser }) => {
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                         My Properties
                       </Link>
+                      <Link to="/wishlist" onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        Saved Properties
+                      </Link>
                       {user.role === 'broker' && (
                         <>
                           <Link to="/broker/payment-history" onClick={() => setIsMenuOpen(false)}
@@ -153,7 +170,7 @@ const Navbar: React.FC<NavbarProps> = ({ user: propUser }) => {
             )}
           </div>
 
-          {/* Mobile — just logo + login/signup if not logged in */}
+          {/* Mobile — login button if not logged in */}
           <div className="flex md:hidden items-center gap-2">
             {!loading && !user && (
               <Link to="/login" className="text-sm text-blue-600 font-semibold px-3 py-1.5 border border-blue-200 rounded-lg">

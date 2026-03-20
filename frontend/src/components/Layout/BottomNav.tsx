@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Key, PlusSquare, Bell, User,
   Building2, LogOut, CreditCard, Wallet,
-  ChevronRight, UserCheck, X, Phone
+  ChevronRight, UserCheck, X, Phone, Bookmark
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API from '../../services/api';
@@ -22,6 +22,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('getroof_user');
     toast.success('Logged out successfully');
     navigate('/login');
     setShowAccountSheet(false);
@@ -138,6 +139,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
 
               <MenuItem icon={Building2} label="My Properties" sub="View your listings"
                 onClick={() => { navigate('/my-properties'); setShowAccountSheet(false); }} />
+
+              <MenuItem icon={Bookmark} label="Saved Properties" sub="View your wishlist"
+                onClick={() => { navigate('/wishlist'); setShowAccountSheet(false); }} />
 
               {/* Broker-specific */}
               {user?.role === 'broker' && (

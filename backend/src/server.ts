@@ -22,6 +22,7 @@ import buyerInterestRoutes from './routes/buyerInterest.routes';
 import brokerNotificationRoutes from './routes/brokerNotification.routes';
 import withdrawalRoutes from './routes/withdrawal.routes';
 import supportRoutes from './routes/support.routes';
+import wishlistRoutes from './routes/wishlist.routes';
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/v1/buyer-interests', buyerInterestRoutes);
 app.use('/api/v1/broker-notifications', brokerNotificationRoutes);
 app.use('/api/v1/withdrawals', withdrawalRoutes);
 app.use('/api/v1/support', supportRoutes);
+app.use('/api/v1/wishlist', wishlistRoutes);
 
 // Backward compatibility
 app.use('/api/auth', authRoutes);
@@ -88,6 +90,7 @@ app.use('/api/buyer-interests', buyerInterestRoutes);
 app.use('/api/broker-notifications', brokerNotificationRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Health check
 app.get('/api/v1/health', (req: Request, res: Response) => {

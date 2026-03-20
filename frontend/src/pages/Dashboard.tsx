@@ -54,16 +54,26 @@ const Dashboard: React.FC = () => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [searchText, activeType]);
 
-  // Reset rent category when switching away from rent
   useEffect(() => {
     if (activeType !== 'rent') setRentCategory('all');
   }, [activeType]);
 
   const fetchUser = async () => {
+    // Load from cache instantly — no delay
+    const cached = localStorage.getItem('getroof_user');
+    if (cached) {
+      try { setUser(JSON.parse(cached)); } catch (_) {}
+    }
+    // Then fetch fresh data in background
     try {
       const response = await API.get('/auth/me');
-      if (response.data.success) setUser(response.data.data);
-    } catch (_) {}
+      if (response.data.success) {
+        setUser(response.data.data);
+        localStorage.setItem('getroof_user', JSON.stringify(response.data.data));
+      }
+    } catch (_) {
+      localStorage.removeItem('getroof_user');
+    }
   };
 
   const fetchProperties = async (search: string, type: string) => {
@@ -89,7 +99,6 @@ const Dashboard: React.FC = () => {
     setShowFilters(false);
   };
 
-  // Filter by rent category on frontend
   const filteredProperties = activeType === 'rent' && rentCategory !== 'all'
     ? properties.filter((p) => {
         if (rentCategory === 'house') return p.propertyType !== 'hostel' && p.propertyType !== 'pg';
@@ -107,7 +116,6 @@ const Dashboard: React.FC = () => {
       {/* Sticky search + filters */}
       <div className="bg-white border-b border-gray-100 sticky top-16 z-30 px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          {/* Search bar */}
           <div className="flex gap-2 mb-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -130,7 +138,6 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Type filter tabs */}
           <div className="flex gap-2">
             {[
               { key: 'all', label: 'All Properties' },
@@ -147,7 +154,6 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
 
-          {/* Price filter panel */}
           {showFilters && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-xs font-semibold text-gray-500 mb-2">PRICE RANGE</p>
@@ -169,7 +175,6 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-3xl mx-auto px-4 pt-4">
 
-        {/* Rent category icons — only shown when For Rent is selected */}
         {activeType === 'rent' && (
           <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
             <div className="flex justify-center gap-4 sm:gap-8">
@@ -188,7 +193,6 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Results count */}
         <div className="pb-2">
           <p className="text-xs text-gray-400 font-medium">
             {loading ? 'Loading...' : `${filteredProperties.length} properties found${searchText ? ` for "${searchText}"` : ''}`}
@@ -196,7 +200,6 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Property Feed */}
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -231,8 +234,6 @@ const Dashboard: React.FC = () => {
               return (
                 <div key={property._id} onClick={() => navigate(`/property/${property._id}`)}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 active:scale-[0.99]">
-
-                  {/* Large image */}
                   <div className="relative h-56 bg-gray-100">
                     {property.images?.length > 0 ? (
                       <img src={property.images[0]} alt={property.title}
@@ -243,7 +244,6 @@ const Dashboard: React.FC = () => {
                         {property.propertyType === 'hostel' ? '🏨' : property.propertyType === 'pg' ? '🛏️' : '🏠'}
                       </div>
                     )}
-                    {/* Listing type badge */}
                     <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-md ${
                       property.propertyType === 'hostel' ? 'bg-orange-500 text-white'
                       : property.propertyType === 'pg' ? 'bg-purple-600 text-white'
@@ -254,19 +254,15 @@ const Dashboard: React.FC = () => {
                         : property.propertyType === 'pg' ? 'PG'
                         : property.listingType === 'sale' ? 'For Sale' : 'For Rent'}
                     </div>
-                    {/* PIN badge */}
                     <div className="absolute top-3 right-3 bg-black bg-opacity-50 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
                       <MapPin className="w-3 h-3 inline mr-1" />{property.address.pinCode}
                     </div>
-                    {/* Multiple images indicator */}
                     {property.images?.length > 1 && (
                       <div className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white text-xs px-2 py-0.5 rounded-full">
                         +{property.images.length - 1} photos
                       </div>
                     )}
                   </div>
-
-                  {/* Property info */}
                   <div className="p-4">
                     {isHostelOrPG && property.hostelName && (
                       <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">{property.hostelName}</p>
@@ -282,7 +278,6 @@ const Dashboard: React.FC = () => {
                       <MapPin className="w-3 h-3 flex-shrink-0" />
                       <span className="line-clamp-1">{property.address.street}, {property.address.city}, {property.address.state}</span>
                     </div>
-                    {/* Property stats */}
                     <div className="flex gap-3 pt-3 border-t border-gray-50">
                       {!isHostelOrPG && property.area > 0 && (
                         <div className="flex items-center gap-1 text-xs text-gray-500">

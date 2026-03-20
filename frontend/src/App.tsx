@@ -6,6 +6,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import VerifyEmail from './pages/VerifyEmail';
+import WishlistPage from './pages/WishlistPage';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -74,6 +75,7 @@ function App() {
         <Route path="/upload-house" element={<UploadHouse />} />
         <Route path="/my-properties" element={<MyProperties />} />
         <Route path="/properties" element={<PropertyList />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
 
         {/* Legal Routes */}
         <Route path="/terms" element={<TermsAndConditions />} />
